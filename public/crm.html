@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CRM | Safari Office</title>
+<link rel="stylesheet" href="/theme.css">
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin:0;
+  font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  padding:28px 32px 60px;
+}
+
+a.back { color:#8a8aff; text-decoration:none; font-size:13px; }
+a.back:hover { text-decoration:underline; }
+
+/* ---------- top bar ---------- */
+.crm-topbar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:18px;
+}
+
+.crm-header {
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:16px;
+  margin-bottom:26px;
+}
+
+.crm-title-block h1 {
+  margin:0;
+  font-size:26px;
+  letter-spacing:0.01em;
+}
+.crm-title-block .crm-subtitle {
+  margin-top:4px;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:0.12em;
+  color:var(--muted);
+}
+
+/* ---------- search ---------- */
+.crm-search-wrap {
+  position:relative;
+  width:280px;
+  max-width:100%;
+}
+.crm-search-icon {
+  position:absolute;
+  left:13px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:14px;
+  opacity:0.55;
+  pointer-events:none;
+}
+.crm-search {
+  width:100%;
+  padding:10px 14px 10px 36px;
+  border-radius:11px;
+  border:1px solid var(--border);
+  background:var(--input);
+  color:var(--text);
+  font-size:13px;
+  outline:none;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.crm-search::placeholder { color:var(--muted); }
+.crm-search:focus {
+  border-color:#6a6aff;
+  box-shadow:0 0 0 3px rgba(106,106,255,0.18);
+}
+.crm-search-meta {
+  position:absolute;
+  right:10px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:11px;
+  color:var(--muted);
+  background:var(--card);
+  padding:2px 7px;
+  border-radius:999px;
+  display:none;
+}
+.crm-search-meta.show { display:block; }
+
+/* ---------- legend ---------- */
+.crm-legend {
+  display:flex;
+  gap:14px;
+  margin-bottom:24px;
+  flex-wrap:wrap;
+}
+.crm-legend-chip {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:11px;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+}
+.crm-legend-dot { width:8px; height:8px; border-radius:50%; }
+.crm-legend-dot.sales { background:#4f8cff; box-shadow:0 0 8px #4f8cff; }
+.crm-legend-dot.retention { background:#3ecf7a; box-shadow:0 0 8px #3ecf7a; }
+
+/* ---------- generic fade-in ---------- */
+@keyframes crmRise {
+  from { opacity:0; transform:translateY(10px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.crm-animate {
+  opacity:0;
+  animation:crmRise .5s cubic-bezier(.2,.7,.3,1) forwards;
+}
+
+/* ---------- top heads (HOS / HOR) row ---------- */
+.crm-heads-row {
+  display:flex;
+  gap:20px;
+  flex-wrap:wrap;
+  margin-bottom:6px;
+}
+.crm-heads-row > * { flex:1 1 320px; }
+
+.crm-head-card {
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  border-radius:16px;
+  padding:18px 22px;
+  overflow:hidden;
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+.crm-head-card:hover { transform:translateY(-2px); }
+
+.crm-head-card.sales {
+  background:linear-gradient(135deg, rgba(79,140,255,0.16), rgba(20,24,40,0.4));
+  border:1px solid rgba(79,140,255,0.45);
+  box-shadow:0 0 0 1px rgba(79,140,255,0.05), 0 14px 30px -16px rgba(79,140,255,0.5);
+}
+.crm-head-card.retention {
+  background:linear-gradient(135deg, rgba(62,207,122,0.14), rgba(12,28,18,0.4));
+  border:1px solid rgba(62,207,122,0.45);
+  box-shadow:0 0 0 1px rgba(62,207,122,0.05), 0 14px 30px -16px rgba(62,207,122,0.5);
+}
+
+.crm-head-icon {
+  width:46px; height:46px;
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:19px;
+  flex-shrink:0;
+}
+.crm-head-card.sales .crm-head-icon { background:linear-gradient(135deg,#6fa6ff,#3a66d8); box-shadow:0 0 16px rgba(79,140,255,0.55); }
+.crm-head-card.retention .crm-head-icon { background:linear-gradient(135deg,#6fe09a,#1f8a4c); box-shadow:0 0 16px rgba(62,207,122,0.55); }
+
+.crm-head-label {
+  font-size:10.5px;
+  text-transform:uppercase;
+  letter-spacing:0.09em;
+  font-weight:700;
+}
+.crm-head-card.sales .crm-head-label { color:#7fb0ff; }
+.crm-head-card.retention .crm-head-label { color:#7fe6a8; }
+
+.crm-head-people { display:flex; gap:18px; flex-wrap:wrap; }
+.crm-head-person { display:flex; align-items:center; gap:10px; }
+.crm-head-name { font-size:15px; font-weight:700; }
+.crm-head-role { font-size:11px; color:var(--muted); }
+
+/* ---------- tree connectors ---------- */
+.crm-branch { margin-bottom:38px; }
+
+.crm-trunk {
+  height:26px;
+  width:2px;
+  margin:0 auto;
+  position:relative;
+}
+.crm-trunk.sales { background:rgba(79,140,255,0.45); }
+.crm-trunk.retention { background:rgba(62,207,122,0.45); }
+
+.crm-bar-row {
+  display:flex;
+  align-items:stretch;
+}
+.crm-bar-row .crm-stub {
+  flex:1;
+  border-top:2px solid transparent;
+  position:relative;
+}
+.crm-bar-row .crm-stub::before {
+  content:"";
+  position:absolute;
+  top:0; left:50%;
+  width:2px; height:18px;
+  transform:translate(-50%, 0);
+}
+.crm-branch.sales .crm-bar-row .crm-stub { border-top-color:rgba(79,140,255,0.45); }
+.crm-branch.sales .crm-bar-row .crm-stub::before { background:rgba(79,140,255,0.45); }
+.crm-branch.retention .crm-bar-row .crm-stub { border-top-color:rgba(62,207,122,0.45); }
+.crm-branch.retention .crm-bar-row .crm-stub::before { background:rgba(62,207,122,0.45); }
+.crm-bar-row .crm-stub:first-child { border-top-left-radius:6px; }
+.crm-bar-row .crm-stub:last-child { border-top-right-radius:6px; }
+.crm-bar-row .crm-stub:first-child::after,
+.crm-bar-row .crm-stub:last-child::after {
+  content:"";
+  position:absolute; top:-2px; width:50%; height:2px;
+}
+
+.crm-dept-grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap:18px;
+  margin-top:18px;
+}
+
+/* ---------- department column ---------- */
+.crm-col {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+  transition:opacity .25s ease, transform .25s ease, box-shadow .2s ease;
+}
+.crm-col:hover { box-shadow:0 10px 26px -16px rgba(0,0,0,0.6); }
+.crm-col.crm-dim { opacity:0.22; transform:scale(0.985); }
+
+.crm-col-head {
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:13px 16px;
+  cursor:pointer;
+  user-select:none;
+  border-bottom:1px solid var(--border);
+}
+.crm-col.sales .crm-col-head { background:rgba(79,140,255,0.08); }
+.crm-col.retention .crm-col-head { background:rgba(62,207,122,0.08); }
+
+.crm-flag { font-size:17px; line-height:1; }
+.crm-col-title {
+  font-size:12.5px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  flex:1;
+}
+.crm-col.sales .crm-col-title { color:#7fb0ff; }
+.crm-col.retention .crm-col-title { color:#7fe6a8; }
+
+.crm-col-count {
+  font-size:10.5px;
+  color:var(--muted);
+  background:var(--input);
+  padding:2px 8px;
+  border-radius:999px;
+}
+.crm-chevron {
+  font-size:10px;
+  color:var(--muted);
+  transition:transform .25s ease;
+}
+.crm-col.collapsed .crm-chevron { transform:rotate(-90deg); }
+
+.crm-col-body {
+  padding:14px 16px 16px;
+  display:grid;
+  grid-template-rows:1fr;
+  transition:grid-template-rows .28s ease;
+}
+.crm-col.collapsed .crm-col-body {
+  grid-template-rows:0fr;
+  padding-top:0; padding-bottom:0;
+}
+.crm-col-body > .crm-col-body-inner { overflow:hidden; }
+
+.crm-tl-group { margin-bottom:14px; }
+.crm-tl-group:last-child { margin-bottom:0; }
+
+.crm-person {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:7px 9px;
+  border-radius:9px;
+  transition:background .15s ease, opacity .2s ease, transform .2s ease;
+}
+.crm-person:hover { background:var(--input); }
+
+.crm-tl-card {
+  border-radius:11px;
+  padding:9px 10px;
+  margin-bottom:7px;
+  position:relative;
+}
+.crm-col.sales .crm-tl-card { background:rgba(79,140,255,0.10); border:1px solid rgba(79,140,255,0.28); }
+.crm-col.retention .crm-tl-card { background:rgba(62,207,122,0.10); border:1px solid rgba(62,207,122,0.28); }
+
+.crm-avatar {
+  width:28px; height:28px;
+  border-radius:50%;
+  object-fit:cover;
+  background:#3a3a45;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700;
+  flex-shrink:0;
+  color:#fff;
+}
+.crm-tl-card .crm-avatar { width:32px; height:32px; font-size:12px; }
+.crm-col.sales .crm-tl-card .crm-avatar { background:linear-gradient(135deg,#6fa6ff,#3a66d8); }
+.crm-col.retention .crm-tl-card .crm-avatar { background:linear-gradient(135deg,#6fe09a,#1f8a4c); }
+
+.crm-person-name { font-size:13px; }
+.crm-tl-name { font-size:13.5px; font-weight:700; }
+.crm-tl-role {
+  font-size:9.5px;
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+}
+.crm-col.sales .crm-tl-role { color:#7fb0ff; }
+.crm-col.retention .crm-tl-role { color:#7fe6a8; }
+
+.crm-member-list {
+  margin-left:6px;
+  padding-left:11px;
+  border-left:2px solid var(--border);
+  display:flex; flex-direction:column; gap:2px;
+}
+.crm-col.sales .crm-member-list { border-left-color:rgba(79,140,255,0.22); }
+.crm-col.retention .crm-member-list { border-left-color:rgba(62,207,122,0.22); }
+
+.crm-empty-team { color:var(--muted); font-style:italic; font-size:11.5px; padding:4px 9px; }
+
+/* ---------- search highlight / filtering ---------- */
+mark.crm-hl {
+  background:rgba(255,210,80,0.32);
+  color:inherit;
+  border-radius:3px;
+  padding:0 2px;
+}
+.crm-person.crm-match {
+  background:rgba(255,210,80,0.10);
+  animation:crmPulse 1.1s ease 1;
+}
+@keyframes crmPulse {
+  0% { box-shadow:0 0 0 0 rgba(255,210,80,0.45); }
+  70% { box-shadow:0 0 0 7px rgba(255,210,80,0); }
+  100% { box-shadow:0 0 0 0 rgba(255,210,80,0); }
+}
+.crm-person.crm-fade { opacity:0.2; }
+.crm-tl-card.crm-fade { opacity:0.2; }
+
+.crm-no-results {
+  text-align:center;
+  color:var(--muted);
+  padding:60px 20px;
+  font-size:14px;
+}
+
+.crm-empty-state { color:var(--muted); padding:40px 0; text-align:center; }
+
+/* ---------- view toggle tabs ---------- */
+.crm-view-tabs {
+  display:flex;
+  gap:6px;
+  margin-bottom:22px;
+  border-bottom:1px solid var(--border);
+  padding-bottom:0;
+}
+.crm-view-tab {
+  padding:8px 16px;
+  font-size:12.5px;
+  font-weight:600;
+  letter-spacing:0.04em;
+  color:var(--muted);
+  cursor:pointer;
+  border-radius:10px 10px 0 0;
+  border:1px solid transparent;
+  border-bottom:none;
+  transition:color .15s, background .15s, border-color .15s;
+  user-select:none;
+  position:relative;
+  bottom:-1px;
+  background:transparent;
+}
+.crm-view-tab:hover { color:var(--text); background:var(--input); }
+.crm-view-tab.active {
+  color:var(--text);
+  background:var(--bg);
+  border-color:var(--border);
+  border-bottom-color:var(--bg);
+}
+
+/* ---------- agents view ---------- */
+.crm-agents-toolbar {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:20px;
+  flex-wrap:wrap;
+}
+.crm-sort-label {
+  font-size:11.5px;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:0.07em;
+  white-space:nowrap;
+}
+.crm-sort-btn {
+  padding:6px 13px;
+  font-size:12px;
+  font-weight:600;
+  border-radius:20px;
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--muted);
+  cursor:pointer;
+  transition:color .15s, border-color .15s, background .15s;
+  white-space:nowrap;
+}
+.crm-sort-btn:hover { color:var(--text); border-color:#6a6aff; }
+.crm-sort-btn.active {
+  color:#fff;
+  background:linear-gradient(135deg,#6a6aff,#4a4adf);
+  border-color:transparent;
+  box-shadow:0 4px 14px -4px rgba(106,106,255,0.5);
+}
+
+/* ---------- agents grid ---------- */
+.crm-agents-grid {
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.crm-agents-section {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  overflow:hidden;
+  animation:crmRise .4s cubic-bezier(.2,.7,.3,1) both;
+}
+.crm-agents-section-head {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:11px 16px;
+  background:var(--input);
+  border-bottom:1px solid var(--border);
+  cursor:pointer;
+  user-select:none;
+}
+.crm-agents-section-icon { font-size:15px; }
+.crm-agents-section-title {
+  font-size:12px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.07em;
+  flex:1;
+}
+.crm-agents-section-count {
+  font-size:11px;
+  color:var(--muted);
+  background:var(--card);
+  padding:2px 8px;
+  border-radius:999px;
+}
+.crm-agents-section-chevron {
+  font-size:10px;
+  color:var(--muted);
+  transition:transform .22s ease;
+}
+.crm-agents-section.collapsed .crm-agents-section-chevron { transform:rotate(-90deg); }
+.crm-agents-section-body {
+  display:grid;
+  grid-template-rows:1fr;
+  transition:grid-template-rows .26s ease;
+}
+.crm-agents-section.collapsed .crm-agents-section-body {
+  grid-template-rows:0fr;
+}
+.crm-agents-section-body-inner {
+  overflow:hidden;
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap:0;
+}
+
+.crm-agent-card {
+  display:flex;
+  align-items:center;
+  gap:11px;
+  padding:11px 16px;
+  border-bottom:1px solid var(--border);
+  border-right:1px solid var(--border);
+  transition:background .15s;
+}
+.crm-agent-card:hover { background:var(--input); }
+.crm-agent-info { flex:1; min-width:0; }
+.crm-agent-name {
+  font-size:13px;
+  font-weight:600;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.crm-agent-meta {
+  font-size:10.5px;
+  color:var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  margin-top:1px;
+}
+.crm-agent-badge {
+  font-size:9.5px;
+  font-weight:700;
+  padding:2px 7px;
+  border-radius:999px;
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+  flex-shrink:0;
+}
+.crm-agent-badge.sales { background:rgba(79,140,255,0.15); color:#7fb0ff; }
+.crm-agent-badge.retention { background:rgba(62,207,122,0.15); color:#7fe6a8; }
+.crm-agent-badge.lead { background:rgba(255,190,80,0.15); color:#ffc966; }
+.crm-agent-badge.head { background:rgba(180,100,255,0.15); color:#d08aff; }
+</style>
+</head>
+<body>
+
+<div class="crm-topbar">
+  <a class="back" href="/dashboard.html">&larr; Back to dashboard</a>
+  <div id="prefsWidget"></div>
+</div>
+
+<div class="crm-header">
+  <div class="crm-title-block">
+    <h1 id="crmTitle">📊 CRM Panel</h1>
+    <div class="crm-subtitle" id="crmSubtitle">Organization chart</div>
+  </div>
+  <div class="crm-search-wrap">
+    <span class="crm-search-icon">🔍</span>
+    <input class="crm-search" id="crmSearch" type="text" placeholder="Search agents, leads…" autocomplete="off">
+    <span class="crm-search-meta" id="crmSearchMeta"></span>
+  </div>
+</div>
+
+<div class="crm-legend">
+  <span class="crm-legend-chip"><span class="crm-legend-dot sales"></span>Sales</span>
+  <span class="crm-legend-chip"><span class="crm-legend-dot retention"></span>Retention</span>
+</div>
+
+<div class="crm-view-tabs">
+  <div class="crm-view-tab active" data-view="tree" onclick="switchView('tree')">🌿 Tree</div>
+  <div class="crm-view-tab" data-view="list" onclick="switchView('list')">☰ List</div>
+  <div class="crm-view-tab" data-view="agents" onclick="switchView('agents')">👥 Agents</div>
+</div>
+
+<div id="crmAgentsToolbar" style="display:none;">
+  <div class="crm-agents-toolbar">
+    <span class="crm-sort-label">Sort by:</span>
+    <button class="crm-sort-btn active" onclick="setAgentSort('alpha')">A → Z</button>
+    <button class="crm-sort-btn" onclick="setAgentSort('team')">Team</button>
+    <button class="crm-sort-btn" onclick="setAgentSort('role')">Role</button>
+    <button class="crm-sort-btn" onclick="setAgentSort('department')">Department</button>
+  </div>
+</div>
+
+<div id="crmContent">Loading...</div>
+<div id="crmAgentsContent" style="display:none;"></div>
+
+<script src="/shared.js"></script>
+<script>
+renderSafariPrefsWidget(document.getElementById("prefsWidget"));
+SafariPrefs.init();
+
+const FLAGS = { ES: "🇪🇸", FR: "🇫🇷", CA: "🇨🇦" };
+function flagFor(dept) {
+  return FLAGS[(dept || "").toUpperCase()] || "🏳️";
+}
+
+function escapeHtml(str) {
+  return String(str ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function initial(name) {
+  return (name || "?").trim().charAt(0).toUpperCase() || "?";
+}
+
+function avatarOrInitial(person, sizeClass) {
+  if (person.avatar) {
+    return `<img class="${sizeClass}" src="${person.avatar}" alt="${escapeHtml(person.name)}">`;
+  }
+  return `<div class="${sizeClass}">${escapeHtml(initial(person.name))}</div>`;
+}
+
+/* ---------- heads row (HOS + HOR) ---------- */
+function renderHos(hos) {
+  if (!hos) return "";
+  return `
+    <div class="crm-head-card sales crm-animate" style="animation-delay:.02s">
+      <div class="crm-head-icon">👑</div>
+      <div class="crm-head-people">
+        <div class="crm-head-person">
+          ${avatarOrInitial(hos, "crm-avatar")}
+          <div>
+            <div class="crm-head-label">Head of Sales</div>
+            <div class="crm-head-name crm-person-target" data-name="${escapeHtml(hos.name)}">${escapeHtml(hos.name)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderHor(hor) {
+  const people = hor || [];
+  if (!people.length) return "";
+  return `
+    <div class="crm-head-card retention crm-animate" style="animation-delay:.08s">
+      <div class="crm-head-icon">🛡️</div>
+      <div class="crm-head-people">
+        ${people.map((h) => `
+          <div class="crm-head-person">
+            ${avatarOrInitial(h, "crm-avatar")}
+            <div>
+              <div class="crm-head-label">Head of Retention</div>
+              <div class="crm-head-name crm-person-target" data-name="${escapeHtml(h.name)}">${escapeHtml(h.name)}</div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- person rows ---------- */
+function renderPerson(person) {
+  return `
+    <div class="crm-person crm-person-target" data-name="${escapeHtml(person.name)}">
+      ${avatarOrInitial(person, "crm-avatar")}
+      <div class="crm-person-name crm-name-text">${escapeHtml(person.name)}</div>
+    </div>
+  `;
+}
+
+function renderTlCard(lead) {
+  return `
+    <div class="crm-tl-card crm-person-target" data-name="${escapeHtml(lead.name)}">
+      <div style="display:flex; align-items:center; gap:10px;">
+        ${avatarOrInitial(lead, "crm-avatar")}
+        <div>
+          <div class="crm-tl-name crm-name-text">${escapeHtml(lead.name)}</div>
+          <div class="crm-tl-role">Team Lead</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- department column ---------- */
+let colCounter = 0;
+function renderTeamColumn(t, branchKind, delay) {
+  colCounter++;
+  const leads = t.leads || [];
+  const members = t.members || [];
+
+  const groups = leads.map((lead) => {
+    const directReports = members.filter((m) => m.manager === lead.name);
+    return `
+      <div class="crm-tl-group">
+        ${renderTlCard(lead)}
+        <div class="crm-member-list">
+          ${directReports.length
+            ? directReports.map(renderPerson).join("")
+            : '<div class="crm-empty-team">No agents assigned</div>'}
+        </div>
+      </div>
+    `;
+  });
+
+  const leadNames = new Set(leads.map((l) => l.name));
+  const unassigned = members.filter((m) => !leadNames.has(m.manager));
+
+  const totalPeople = leads.length + members.length;
+  const teamLabel = (t.team || "Unassigned").replace(/_/g, " ");
+
+  return `
+    <div class="crm-col ${branchKind} crm-animate" style="animation-delay:${delay}s" data-col-id="col-${colCounter}">
+      <div class="crm-col-head" onclick="toggleCol(this)">
+        <span class="crm-flag">${flagFor(t.department)}</span>
+        <span class="crm-col-title">${escapeHtml(teamLabel)}</span>
+        <span class="crm-col-count">${totalPeople}</span>
+        <span class="crm-chevron">▾</span>
+      </div>
+      <div class="crm-col-body">
+        <div class="crm-col-body-inner">
+          ${groups.join("") || '<div class="crm-empty-team">No team leads</div>'}
+          ${unassigned.length
+            ? `<div class="crm-tl-group">
+                <div class="crm-tl-role" style="margin-bottom:6px;">Unassigned</div>
+                <div class="crm-member-list" style="margin-left:0; padding-left:0; border-left:none;">
+                  ${unassigned.map(renderPerson).join("")}
+                </div>
+              </div>`
+            : ""}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleCol(headEl) {
+  headEl.closest(".crm-col").classList.toggle("collapsed");
+}
+
+/* ---------- branch (Sales or Retention tree) ---------- */
+function renderBranch(kind, teams, startDelay) {
+  if (!teams.length) return "";
+  const stubs = teams.map(() => `<div class="crm-stub"></div>`).join("");
+  const cols = teams
+    .map((t, i) => renderTeamColumn(t, kind, startDelay + i * 0.05))
+    .join("");
+  return `
+    <div class="crm-branch ${kind}">
+      <div class="crm-trunk ${kind}"></div>
+      <div class="crm-bar-row">${stubs}</div>
+      <div class="crm-dept-grid">${cols}</div>
+    </div>
+  `;
+}
+
+function renderCrmStructure(data) {
+  const departments = data?.departments || [];
+  const allTeams = departments.flatMap((d) => d.teams);
+  const salesTeams = allTeams.filter((t) => t.kind === "sales");
+  const retentionTeams = allTeams.filter((t) => t.kind === "retention");
+
+  const headsRow = (data?.hos || (data?.hor || []).length)
+    ? `<div class="crm-heads-row">${renderHos(data?.hos)}${renderHor(data?.hor)}</div>`
+    : "";
+
+  if (!allTeams.length) {
+    return headsRow + `<div class="crm-empty-state">No team data to show yet.</div>`;
+  }
+
+  return (
+    headsRow +
+    renderBranch("sales", salesTeams, 0.12) +
+    renderBranch("retention", retentionTeams, 0.12 + salesTeams.length * 0.05 + 0.05)
+  );
+}
+
+/* ---------- search ---------- */
+function normalize(s) {
+  return (s || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function highlightText(name, query) {
+  if (!query) return escapeHtml(name);
+  const norm = normalize(name);
+  const idx = norm.indexOf(query);
+  if (idx === -1) return escapeHtml(name);
+  const before = name.slice(0, idx);
+  const matchTxt = name.slice(idx, idx + query.length);
+  const after = name.slice(idx + query.length);
+  return `${escapeHtml(before)}<mark class="crm-hl">${escapeHtml(matchTxt)}</mark>${escapeHtml(after)}`;
+}
+
+function applySearch() {
+  const raw = document.getElementById("crmSearch").value.trim();
+  const query = normalize(raw);
+  const metaEl = document.getElementById("crmSearchMeta");
+  const targets = document.querySelectorAll(".crm-person-target");
+  let matchCount = 0;
+
+  targets.forEach((el) => {
+    const name = el.getAttribute("data-name") || "";
+    const nameEl = el.querySelector(".crm-name-text") || el;
+    const isMatch = query && normalize(name).includes(query);
+
+    if (query) {
+      nameEl.innerHTML = highlightText(name, query);
+    } else {
+      nameEl.textContent = name;
+    }
+
+    if (!query) {
+      el.classList.remove("crm-fade", "crm-match");
+      return;
+    }
+    if (isMatch) {
+      matchCount++;
+      el.classList.remove("crm-fade");
+      el.classList.add("crm-match");
+    } else {
+      el.classList.add("crm-fade");
+      el.classList.remove("crm-match");
+    }
+  });
+
+  // Dim whole columns that contain zero matches; expand columns that do.
+  document.querySelectorAll(".crm-col").forEach((col) => {
+    if (!query) {
+      col.classList.remove("crm-dim");
+      return;
+    }
+    const hasMatch = col.querySelector(".crm-person-target.crm-match");
+    col.classList.toggle("crm-dim", !hasMatch);
+    if (hasMatch) col.classList.remove("collapsed");
+  });
+
+  if (query) {
+    metaEl.textContent = `${matchCount} found`;
+    metaEl.classList.add("show");
+  } else {
+    metaEl.classList.remove("show");
+  }
+}
+
+/* ========== VIEW SWITCHING ========== */
+let currentView = 'tree';
+
+function switchView(view) {
+  currentView = view;
+  document.querySelectorAll('.crm-view-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.view === view);
+  });
+  const crmContent = document.getElementById('crmContent');
+  const agentsContent = document.getElementById('crmAgentsContent');
+  const agentsToolbar = document.getElementById('crmAgentsToolbar');
+
+  if (view === 'agents') {
+    crmContent.style.display = 'none';
+    agentsContent.style.display = 'block';
+    agentsToolbar.style.display = 'block';
+    renderAgentsView();
+  } else {
+    crmContent.style.display = 'block';
+    agentsContent.style.display = 'none';
+    agentsToolbar.style.display = 'none';
+    if (crmStructureData) {
+      crmContent.innerHTML = renderCrmStructure(crmStructureData);
+    }
+  }
+}
+
+/* ========== AGENTS VIEW ========== */
+let currentAgentSort = 'alpha';
+let allAgentsList = [];
+
+const ROLE_LABELS = {
+  hos: 'Head of Sales', hor: 'Head of Retention',
+  tl_sales: 'Team Lead · Sales', tl_retention: 'Team Lead · Retention',
+  sales: 'Sales Agent', retention: 'Retention Agent', admin: 'Admin',
+};
+const ROLE_ORDER = ['hos','hor','tl_sales','tl_retention','sales','retention','admin'];
+
+function roleBadgeClass(role) {
+  if (role === 'hos' || role === 'hor') return 'head';
+  if (role === 'tl_sales' || role === 'tl_retention') return 'lead';
+  if (role === 'sales') return 'sales';
+  if (role === 'retention') return 'retention';
+  return 'sales';
+}
+
+function buildAgentsList(data) {
+  if (!data) return [];
+  const agents = [];
+  if (data.hos) agents.push({ name: data.hos.name, role: 'hos', team: 'Global', department: 'GLOBAL', manager: null, avatar: data.hos.avatar });
+  (data.hor || []).forEach(h => agents.push({ name: h.name, role: 'hor', team: 'Global', department: 'GLOBAL', manager: null, avatar: h.avatar }));
+  const departments = data.departments || [];
+  departments.forEach(dept => {
+    (dept.teams || []).forEach(team => {
+      const kind = team.kind;
+      const teamLabel = (team.team || 'Unassigned').replace(/_/g, ' ');
+      const deptLabel = (team.department || '').toUpperCase();
+      (team.leads || []).forEach(lead => {
+        agents.push({ name: lead.name, role: kind === 'sales' ? 'tl_sales' : 'tl_retention', team: teamLabel, department: deptLabel, manager: lead.manager || null, avatar: lead.avatar });
+      });
+      (team.members || []).forEach(m => {
+        agents.push({ name: m.name, role: kind === 'sales' ? 'sales' : 'retention', team: teamLabel, department: deptLabel, manager: m.manager || null, avatar: m.avatar });
+      });
+    });
+  });
+  return agents;
+}
+
+function renderAgentCard(agent) {
+  const avatarHtml = agent.avatar
+    ? `<img class="crm-avatar" src="${agent.avatar}" alt="${escapeHtml(agent.name)}">`
+    : `<div class="crm-avatar">${escapeHtml(initial(agent.name))}</div>`;
+  const badgeClass = roleBadgeClass(agent.role);
+  const meta = agent.manager ? `Under ${escapeHtml(agent.manager)}` : escapeHtml(agent.team || agent.department || "");
+  return `<div class="crm-agent-card crm-person-target" data-name="${escapeHtml(agent.name)}">
+    ${avatarHtml}
+    <div class="crm-agent-info">
+      <div class="crm-agent-name crm-name-text">${escapeHtml(agent.name)}</div>
+      <div class="crm-agent-meta">${meta}</div>
+    </div>
+    <span class="crm-agent-badge ${badgeClass}">${escapeHtml(ROLE_LABELS[agent.role] || agent.role)}</span>
+  </div>`;
+}
+
+function renderAgentSection(title, icon, agents, delay) {
+  if (!agents.length) return "";
+  return `<div class="crm-agents-section crm-animate" style="animation-delay:${delay}s">
+    <div class="crm-agents-section-head" onclick="toggleAgentSection(this)">
+      <span class="crm-agents-section-icon">${icon}</span>
+      <span class="crm-agents-section-title">${escapeHtml(title)}</span>
+      <span class="crm-agents-section-count">${agents.length}</span>
+      <span class="crm-agents-section-chevron">▾</span>
+    </div>
+    <div class="crm-agents-section-body">
+      <div class="crm-agents-section-body-inner">
+        ${agents.map(renderAgentCard).join("")}
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleAgentSection(headEl) {
+  headEl.closest(".crm-agents-section").classList.toggle("collapsed");
+}
+
+const DEPT_FLAGS = { ES: "🇪🇸", FR: "🇫🇷", CA: "🇨🇦", GLOBAL: "🌍" };
+const ROLE_ICONS = { hos: "👑", hor: "🛡️", tl_sales: "⭐", tl_retention: "⭐", sales: "📈", retention: "🔒", admin: "⚙️" };
+
+function renderAgentsView() {
+  const container = document.getElementById("crmAgentsContent");
+  if (!allAgentsList.length) { container.innerHTML = "<div class='crm-empty-state'>No agent data.</div>"; return; }
+  const sorted = [...allAgentsList].sort((a, b) => a.name.localeCompare(b.name));
+  let sections = [];
+
+  if (currentAgentSort === "alpha") {
+    const byLetter = {};
+    sorted.forEach(a => {
+      const letter = a.name.trim()[0].toUpperCase();
+      if (!byLetter[letter]) byLetter[letter] = [];
+      byLetter[letter].push(a);
+    });
+    sections = Object.keys(byLetter).sort().map((letter, i) => renderAgentSection(letter, "🔤", byLetter[letter], i * 0.04));
+
+  } else if (currentAgentSort === "team") {
+    const byTeam = {};
+    sorted.forEach(a => {
+      const key = a.team || "Unassigned";
+      if (!byTeam[key]) byTeam[key] = [];
+      byTeam[key].push(a);
+    });
+    sections = Object.keys(byTeam).sort().map((team, i) => {
+      const dept = (byTeam[team][0] || {}).department || "";
+      return renderAgentSection(team, DEPT_FLAGS[dept] || "🏷️", byTeam[team], i * 0.04);
+    });
+
+  } else if (currentAgentSort === "role") {
+    const byRole = {};
+    sorted.forEach(a => {
+      if (!byRole[a.role]) byRole[a.role] = [];
+      byRole[a.role].push(a);
+    });
+    sections = ROLE_ORDER.filter(r => byRole[r]).map((role, i) =>
+      renderAgentSection(ROLE_LABELS[role] || role, ROLE_ICONS[role] || "👤", byRole[role], i * 0.04)
+    );
+
+  } else if (currentAgentSort === "department") {
+    const byDept = {};
+    sorted.forEach(a => {
+      const key = a.department || "Unknown";
+      if (!byDept[key]) byDept[key] = [];
+      byDept[key].push(a);
+    });
+    sections = Object.keys(byDept).sort().map((dept, i) =>
+      renderAgentSection(dept, DEPT_FLAGS[dept] || "🌐", byDept[dept], i * 0.04)
+    );
+  }
+
+  container.innerHTML = `<div class="crm-agents-grid">${sections.join("")}</div>`;
+}
+
+function setAgentSort(sort) {
+  currentAgentSort = sort;
+  document.querySelectorAll(".crm-sort-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("onclick").includes(`''`));
+  });
+  renderAgentsView();
+}
+
+let crmStructureData = null;
+
+async function loadCRM() {
+  const content = document.getElementById("crmContent");
+  const titleEl = document.getElementById("crmTitle");
+  const subtitleEl = document.getElementById("crmSubtitle");
+  try {
+    const meRes = await fetch("/me");
+    const me = meRes.ok ? await meRes.json() : null;
+    if (me && me.role !== "hos" && me.role !== "hor" && me.role !== "admin") {
+      titleEl.textContent = "📊 My Team";
+      subtitleEl.textContent = "Your team structure";
+    }
+
+    const res = await fetch("/api/crm/structure");
+    if (!res.ok) {
+      window.location.href = "/login.html";
+      return;
+    }
+    const data = await res.json();
+    crmStructureData = data;
+    allAgentsList = buildAgentsList(data);
+    content.innerHTML = renderCrmStructure(data);
+  } catch (e) {
+    content.innerHTML = "<p>Failed to load CRM data.</p>";
+  }
+}
+
+document.getElementById("crmSearch").addEventListener("input", () => {
+  // Debounce slightly for smoother feel on fast typing.
+  clearTimeout(window.__crmSearchT);
+  window.__crmSearchT = setTimeout(applySearch, 60);
+});
+
+loadCRM();
+</script>
+
+</body>
+</html>

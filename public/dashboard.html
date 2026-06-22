@@ -1,0 +1,4724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Safari Office Dashboard</title>
+<script src="/socket.io/socket.io.js"></script>
+<link rel="stylesheet" href="/theme.css">
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin:0;
+  font-family:-apple-system, BlinkMacSystemFont, "Segoe UI";
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  height:100vh;
+}
+
+.sidebar {
+  width:160px;
+  background:var(--panel);
+  padding:16px 10px;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  flex-shrink:0;
+}
+
+.logo {
+  font-size:20px;
+  margin-bottom:18px;
+  text-align:center;
+}
+
+.tab {
+  width:100%;
+  padding:10px 14px;
+  margin:3px 0;
+  background:transparent;
+  border-radius:12px;
+  cursor:pointer;
+  transition: background 0.15s;
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  gap:10px;
+  text-align:left;
+}
+
+.tab-icon { font-size:19px; line-height:1; flex-shrink:0; }
+.tab-label {
+  font-size:13px;
+  font-weight:600;
+  line-height:1.2;
+  color:var(--muted);
+  white-space:nowrap;
+}
+
+.tab:hover { background:var(--card); }
+
+.tab.active { background:#3a3aff33; }
+.tab.active .tab-label { color:var(--text); }
+
+.tab-badge {
+  position:relative;
+  top:-8px;
+  left:-6px;
+  min-width:15px;
+  height:15px;
+  border-radius:999px;
+  background:#ff5a5a;
+  color:#fff;
+  font-size:9.5px;
+  font-weight:700;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:0 3px;
+}
+.tab-badge.show { display:flex; }
+
+.sidebar-footer {
+  margin-top:auto;
+  width:100%;
+}
+
+.logout-btn {
+  width:100%;
+  padding:10px 14px;
+  border:none;
+  border-radius:12px;
+  background:#3a1f1f;
+  color:#ff8a8a;
+  cursor:pointer;
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  gap:10px;
+  font-size:13px;
+  font-weight:600;
+  text-align:left;
+}
+.logout-btn .tab-icon { font-size:18px; }
+
+.main {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+
+.topbar {
+  height:60px;
+  background:var(--panel);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 20px;
+  flex-shrink:0;
+  gap:14px;
+}
+
+.topbar-right {
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+
+.userbox {
+  font-size:14px;
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+  padding:6px 10px;
+  border-radius:10px;
+  transition:background 0.15s;
+}
+
+.userbox:hover { background:var(--card); }
+.userbox.active { background:#3a3aff33; color:var(--text); }
+
+.userbox-avatar {
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  object-fit:cover;
+  background:linear-gradient(135deg, var(--accent), #8a5aff);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  font-weight:700;
+  color:#fff;
+  flex-shrink:0;
+}
+
+.content {
+  flex:1;
+  display:flex;
+  min-height:0;
+}
+
+.chat {
+  flex:2;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+
+.messages {
+  flex:1;
+  padding:20px;
+  overflow:auto;
+}
+
+.msg {
+  margin-bottom:8px;
+  word-wrap: break-word;
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+}
+
+.msg-avatar {
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  object-fit:cover;
+  background:#3a3a45;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  font-weight:700;
+  flex-shrink:0;
+  margin-top:2px;
+}
+
+.msg-body { min-width:0; }
+
+.msg .author {
+  color:var(--accent);
+  font-weight:600;
+}
+
+.input {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px;
+  background:var(--panel);
+}
+
+.attach-btn {
+  flex-shrink:0;
+  width:42px;
+  height:42px;
+  border:none;
+  border-radius:10px;
+  background:var(--card);
+  color:var(--text);
+  font-size:18px;
+  cursor:pointer;
+}
+
+.attach-btn:hover { background:var(--border); }
+
+.msg-img {
+  max-width:260px;
+  border-radius:10px;
+  margin-top:6px;
+  display:block;
+  cursor:pointer;
+}
+
+.msg-file {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-top:6px;
+  padding:8px 12px;
+  background:var(--card);
+  border-radius:10px;
+  color:var(--text);
+  text-decoration:none;
+  font-size:13px;
+}
+
+.msg-file:hover { background:var(--border); }
+
+/* VOICE MESSAGE */
+.bubble-audio {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:200px;
+  max-width:280px;
+}
+.bubble-audio audio {
+  width:100%;
+  height:36px;
+  border-radius:20px;
+  outline:none;
+  accent-color:#3a3aff;
+}
+.voice-btn {
+  flex-shrink:0;
+  width:42px;
+  height:42px;
+  border:none;
+  border-radius:10px;
+  background:var(--card);
+  color:var(--text);
+  font-size:18px;
+  cursor:pointer;
+  transition: background 0.15s;
+}
+.voice-btn:hover { background:var(--border); }
+.voice-btn.recording {
+  background: #e53e3e22;
+  animation: pulse-record 1s infinite;
+}
+@keyframes pulse-record {
+  0%,100% { box-shadow: 0 0 0 0 #e53e3e44; }
+  50%      { box-shadow: 0 0 0 6px transparent; }
+}
+
+/* TOAST NOTIFICATION */
+.toast {
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  background:var(--card);
+  border:1px solid #3a3aff66;
+  padding:14px 18px;
+  border-radius:12px;
+  max-width:300px;
+  font-size:14px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  opacity:0;
+  transform:translateY(10px);
+  transition:0.25s;
+  pointer-events:none;
+  z-index:999;
+}
+
+.toast.show {
+  opacity:1;
+  transform:translateY(0);
+}
+
+.toast .toast-author {
+  color:var(--accent);
+  font-weight:600;
+  margin-bottom:2px;
+}
+
+input[type="text"], input:not([type]) {
+  flex:1;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  outline:none;
+  background:var(--input);
+  color:var(--text);
+}
+
+.right {
+  display:none;
+}
+
+.card {
+  background:var(--card);
+  padding:12px;
+  border-radius:10px;
+  margin-bottom:10px;
+}
+
+.panel-view {
+  flex:1;
+  overflow:auto;
+  padding:20px;
+}
+
+/* ====================== CRM (org chart, embedded) ====================== */
+
+.crm-header {
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:16px;
+  margin-bottom:22px;
+}
+
+.crm-title-block h2 { margin:0; font-size:22px; }
+.crm-title-block .crm-subtitle {
+  margin-top:4px;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:0.12em;
+  color:var(--muted);
+}
+
+/* ---------- view-mode toggle: Tree / List / Agents ---------- */
+.crm-view-toggle {
+  display:flex; align-items:center; gap:3px;
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+  border-radius:999px; padding:3px;
+  user-select:none; flex-shrink:0;
+}
+.crm-view-toggle-knob { display:none; }
+.crm-view-toggle-opt {
+  position:relative; display:flex; align-items:center; gap:5px;
+  padding:6px 13px; border-radius:999px; font-size:11.5px; font-weight:700;
+  letter-spacing:.02em; color:var(--text-dim, #9a9aab);
+  transition:color .2s, background .2s, box-shadow .2s;
+  white-space:nowrap; cursor:pointer;
+}
+.crm-view-toggle-opt:hover { color:var(--text,#fff); }
+.crm-view-toggle-opt.active {
+  color:#0a0a14;
+  background:linear-gradient(135deg,#6fe09a,#4f8cff);
+  box-shadow:0 2px 10px rgba(79,140,255,0.35);
+}
+
+/* agents sort bar */
+.crm-agents-bar {
+  display:flex; align-items:center; gap:8px; margin-bottom:18px; flex-wrap:wrap;
+}
+.crm-agents-bar-label { font-size:11px; color:var(--muted,#9a9aab); text-transform:uppercase; letter-spacing:.07em; }
+.crm-agents-sort-btn {
+  padding:5px 12px; font-size:11.5px; font-weight:700; border-radius:999px;
+  border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.04);
+  color:var(--muted,#9a9aab); cursor:pointer; transition:color .15s,border-color .15s,background .15s;
+  white-space:nowrap;
+}
+.crm-agents-sort-btn:hover { color:var(--text,#fff); border-color:#6a6aff; }
+.crm-agents-sort-btn.active {
+  color:#fff; background:linear-gradient(135deg,#6a6aff,#4a4adf);
+  border-color:transparent; box-shadow:0 4px 14px -4px rgba(106,106,255,0.5);
+}
+
+/* agents sections */
+.crm-agents-section {
+  background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px; overflow:hidden; margin-bottom:10px;
+}
+.crm-agents-section-head {
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  background:rgba(255,255,255,0.04); border-bottom:1px solid rgba(255,255,255,0.07);
+  cursor:pointer; user-select:none;
+}
+.crm-agents-section-title { font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; flex:1; }
+.crm-agents-section-count { font-size:11px; color:var(--muted,#9a9aab); background:rgba(255,255,255,0.06); padding:2px 8px; border-radius:999px; }
+.crm-agents-section-chevron { font-size:10px; color:var(--muted,#9a9aab); transition:transform .2s; }
+.crm-agents-section.collapsed .crm-agents-section-chevron { transform:rotate(-90deg); }
+.crm-agents-section-body { display:grid; grid-template-rows:1fr; transition:grid-template-rows .25s ease; }
+.crm-agents-section.collapsed .crm-agents-section-body { grid-template-rows:0fr; }
+.crm-agents-section-inner {
+  overflow:hidden;
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+.crm-agent-row {
+  display:flex; align-items:center; gap:12px; padding:12px 16px;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+  border-right:1px solid rgba(255,255,255,0.04);
+  cursor:pointer; transition:background .15s; min-width:0;
+}
+.crm-agent-row:hover { background:rgba(255,255,255,0.05); }
+.crm-agent-row-info { flex:1; min-width:0; }
+.crm-agent-row-name {
+  font-size:13.5px; font-weight:600; line-height:1.3;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.crm-agent-row-sub {
+  display:flex; align-items:center; gap:5px; margin-top:4px; flex-wrap:wrap;
+}
+.crm-agent-role-dot {
+  width:7px; height:7px; border-radius:50%; flex-shrink:0;
+}
+.crm-agent-role-dot.sales    { background:#4f8cff; }
+.crm-agent-role-dot.retention { background:#3ecf7a; }
+.crm-agent-role-dot.lead     { background:#ffbe50; }
+.crm-agent-role-dot.head     { background:#b464ff; }
+.crm-agent-role-short {
+  font-size:10.5px; font-weight:700; color:var(--muted,#9a9aab);
+  text-transform:uppercase; letter-spacing:.05em; white-space:nowrap;
+}
+.crm-agent-row-meta {
+  font-size:10.5px; color:var(--muted,#9a9aab); margin-top:1px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* ---------- flat list view ---------- */
+.crm-list-dept { margin-bottom:22px; }
+.crm-list-dept:last-child { margin-bottom:0; }
+.crm-list-dept-title {
+  font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.1em;
+  margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.crm-list-dept-title.sales { color:#7fb0ff; }
+.crm-list-dept-title.retention { color:#7fe6a8; }
+.crm-list-team { margin-bottom:14px; }
+.crm-list-team-name {
+  font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+  color:var(--text-dim, #9a9aab); margin-bottom:6px; display:flex; align-items:center; gap:6px;
+}
+.crm-list-rows { display:flex; flex-direction:column; gap:4px; }
+.crm-list-row {
+  display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:8px;
+  background:rgba(255,255,255,0.025); cursor:pointer; transition:background .15s;
+}
+.crm-list-row:hover { background:rgba(255,255,255,0.06); }
+.crm-list-row .crm-avatar { width:26px; height:26px; font-size:11px; flex-shrink:0; }
+.crm-list-row-name { font-weight:600; font-size:13px; }
+.crm-list-row-role { font-size:10.5px; opacity:.55; margin-left:auto; text-transform:uppercase; letter-spacing:.04em; }
+
+.crm-search-wrap { position:relative; width:260px; max-width:100%; }
+.crm-search-icon {
+  position:absolute; left:13px; top:50%; transform:translateY(-50%);
+  font-size:14px; opacity:0.55; pointer-events:none;
+}
+.crm-search {
+  width:100%;
+  padding:10px 14px 10px 36px;
+  border-radius:11px;
+  border:1px solid var(--border);
+  background:var(--input);
+  color:var(--text);
+  font-size:13px;
+  outline:none;
+  box-sizing:border-box;
+}
+.crm-search:focus { border-color:#6a6aff; }
+.crm-search-meta {
+  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  font-size:11px; color:var(--muted);
+  background:var(--card); padding:2px 7px; border-radius:999px;
+  display:none;
+}
+.crm-search-meta.show { display:block; }
+
+.crm-legend { display:flex; gap:14px; margin-bottom:22px; flex-wrap:wrap; }
+.crm-legend-chip {
+  display:flex; align-items:center; gap:6px;
+  font-size:11px; color:var(--muted);
+  text-transform:uppercase; letter-spacing:0.06em;
+}
+.crm-legend-dot { width:8px; height:8px; border-radius:50%; }
+.crm-legend-dot.sales { background:#4f8cff; box-shadow:0 0 8px #4f8cff; }
+.crm-legend-dot.retention { background:#3ecf7a; box-shadow:0 0 8px #3ecf7a; }
+
+@keyframes crmRise { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+.crm-animate { opacity:0; animation:crmRise .5s cubic-bezier(.2,.7,.3,1) forwards; }
+
+/* ---------- department wrapper headings ---------- */
+.crm-department { margin-bottom:30px; }
+.crm-department:last-child { margin-bottom:0; }
+.crm-department-label {
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  margin-bottom:14px; text-align:center;
+}
+.crm-department-label .crm-department-text {
+  font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:0.14em;
+}
+.crm-department.sales .crm-department-text { color:#7fb0ff; }
+.crm-department.retention .crm-department-text { color:#7fe6a8; }
+.crm-department-line { flex:1 1 60px; max-width:140px; height:1px; }
+.crm-department.sales .crm-department-line { background:linear-gradient(90deg, transparent, rgba(79,140,255,0.4)); }
+.crm-department.sales .crm-department-line.left { background:linear-gradient(90deg, rgba(79,140,255,0.4), transparent); }
+.crm-department.retention .crm-department-line { background:linear-gradient(90deg, transparent, rgba(62,207,122,0.4)); }
+.crm-department.retention .crm-department-line.left { background:linear-gradient(90deg, rgba(62,207,122,0.4), transparent); }
+
+/* ---------- root node (HOS) ---------- */
+.crm-heads-row { display:flex; gap:20px; flex-wrap:wrap; margin-bottom:6px; justify-content:center; }
+.crm-heads-row > * { flex:0 1 360px; }
+
+/* HOS is the root node: centered, capped width */
+.crm-heads-row.crm-hos-row { margin-bottom:0; }
+.crm-heads-row.crm-hos-row > * { flex:0 1 380px; }
+
+/* ---------- HOR row: unified Head of Retention block (one or more heads) ---------- */
+.crm-hor-row {
+  display:flex; align-items:stretch; justify-content:center; gap:16px; flex-wrap:wrap;
+  margin:0 auto 6px; max-width:760px;
+}
+.crm-hor-row > .crm-hor-card { flex:0 1 350px; }
+
+.crm-head-card {
+  position:relative; display:flex; align-items:center; gap:14px;
+  border-radius:16px; padding:18px 22px; overflow:hidden;
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+.crm-head-card:hover { transform:translateY(-2px); }
+.crm-head-card.sales {
+  background:linear-gradient(135deg, rgba(79,140,255,0.16), rgba(20,24,40,0.4));
+  border:1px solid rgba(79,140,255,0.45);
+  box-shadow:0 0 0 1px rgba(79,140,255,0.05), 0 14px 30px -16px rgba(79,140,255,0.5);
+}
+.crm-head-card.retention {
+  background:linear-gradient(135deg, rgba(62,207,122,0.14), rgba(12,28,18,0.4));
+  border:1px solid rgba(62,207,122,0.45);
+  box-shadow:0 0 0 1px rgba(62,207,122,0.05), 0 14px 30px -16px rgba(62,207,122,0.5);
+}
+.crm-head-icon {
+  width:46px; height:46px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0;
+}
+.crm-head-card.sales .crm-head-icon { background:linear-gradient(135deg,#6fa6ff,#3a66d8); box-shadow:0 0 16px rgba(79,140,255,0.55); }
+.crm-head-card.retention .crm-head-icon { background:linear-gradient(135deg,#6fe09a,#1f8a4c); box-shadow:0 0 16px rgba(62,207,122,0.55); }
+.crm-head-label { font-size:10.5px; text-transform:uppercase; letter-spacing:0.09em; font-weight:700; }
+.crm-head-card.sales .crm-head-label { color:#7fb0ff; }
+.crm-head-card.retention .crm-head-label { color:#7fe6a8; }
+.crm-head-people { display:flex; gap:18px; flex-wrap:wrap; justify-content:center; }
+.crm-head-person { display:flex; align-items:center; gap:10px; cursor:pointer; }
+.crm-head-name { font-size:15px; font-weight:700; }
+.crm-head-role { font-size:11px; color:var(--muted); }
+
+.crm-branch { margin-bottom:38px; transition:filter .2s ease; }
+.crm-trunk { height:26px; width:2px; margin:0 auto; position:relative; transition:background .2s ease, box-shadow .2s ease; }
+.crm-trunk.sales { background:rgba(79,140,255,0.45); }
+.crm-trunk.retention { background:rgba(62,207,122,0.45); }
+.crm-branch.crm-branch-active .crm-trunk.sales { background:#6fa6ff; box-shadow:0 0 10px rgba(79,140,255,0.6); }
+.crm-branch.crm-branch-active .crm-trunk.retention { background:#6fe09a; box-shadow:0 0 10px rgba(62,207,122,0.6); }
+
+.crm-bar-row { display:flex; align-items:stretch; justify-content:center; }
+.crm-bar-row .crm-stub { flex:1 1 0; max-width:340px; border-top:2px solid transparent; position:relative; transition:border-color .2s ease; }
+.crm-bar-row .crm-stub::before {
+  content:""; position:absolute; top:0; left:50%; width:2px; height:18px; transform:translate(-50%, 0); transition:background .2s ease;
+}
+.crm-branch.sales .crm-bar-row .crm-stub { border-top-color:rgba(79,140,255,0.45); }
+.crm-branch.sales .crm-bar-row .crm-stub::before { background:rgba(79,140,255,0.45); }
+.crm-branch.retention .crm-bar-row .crm-stub { border-top-color:rgba(62,207,122,0.45); }
+.crm-branch.retention .crm-bar-row .crm-stub::before { background:rgba(62,207,122,0.45); }
+.crm-branch.sales.crm-branch-active .crm-bar-row .crm-stub { border-top-color:#6fa6ff; }
+.crm-branch.sales.crm-branch-active .crm-bar-row .crm-stub::before { background:#6fa6ff; }
+.crm-branch.retention.crm-branch-active .crm-bar-row .crm-stub { border-top-color:#6fe09a; }
+.crm-branch.retention.crm-branch-active .crm-bar-row .crm-stub::before { background:#6fe09a; }
+.crm-bar-row .crm-stub:first-child { border-top-left-radius:6px; }
+.crm-bar-row .crm-stub:last-child { border-top-right-radius:6px; }
+
+.crm-dept-grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap:18px;
+  margin-top:18px;
+  max-width:1180px;
+  margin-left:auto;
+  margin-right:auto;
+  justify-content:center;
+}
+
+.crm-col {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+  transition:opacity .25s ease, transform .25s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.crm-col:hover,
+.crm-col.crm-branch-hover {
+  box-shadow:0 10px 26px -16px rgba(0,0,0,0.6);
+  border-color:rgba(255,255,255,0.18);
+}
+.crm-col.sales:hover, .crm-col.sales.crm-branch-hover { border-color:rgba(79,140,255,0.55); }
+.crm-col.retention:hover, .crm-col.retention.crm-branch-hover { border-color:rgba(62,207,122,0.55); }
+.crm-col.crm-dim { opacity:0.22; transform:scale(0.985); }
+
+.crm-col-head {
+  display:flex; align-items:center; gap:9px;
+  padding:13px 16px; cursor:pointer; user-select:none;
+  border-bottom:1px solid var(--border);
+}
+.crm-col.sales .crm-col-head { background:rgba(79,140,255,0.08); }
+.crm-col.retention .crm-col-head { background:rgba(62,207,122,0.08); }
+
+.crm-flag { font-size:17px; line-height:1; }
+.crm-col-title { font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; flex:1; }
+.crm-col.sales .crm-col-title { color:#7fb0ff; }
+.crm-col.retention .crm-col-title { color:#7fe6a8; }
+.crm-col-count { font-size:10.5px; color:var(--muted); background:var(--input); padding:2px 8px; border-radius:999px; }
+.crm-chevron { font-size:10px; color:var(--muted); transition:transform .25s ease; }
+.crm-col.collapsed .crm-chevron { transform:rotate(-90deg); }
+
+.crm-col-body { padding:14px 16px 16px; display:grid; grid-template-rows:1fr; transition:grid-template-rows .28s ease; }
+.crm-col.collapsed .crm-col-body { grid-template-rows:0fr; padding-top:0; padding-bottom:0; }
+.crm-col-body > .crm-col-body-inner { overflow:hidden; }
+
+.crm-tl-group { margin-bottom:14px; }
+.crm-tl-group:last-child { margin-bottom:0; }
+
+/* Collapsible TL */
+.crm-tl-card { border-radius:11px; padding:9px 10px; margin-bottom:7px; position:relative; cursor:pointer; user-select:none; }
+.crm-tl-card .crm-tl-chevron {
+  margin-left:auto; font-size:11px; opacity:0.5; transition:transform 0.2s;
+}
+.crm-tl-group.tl-collapsed .crm-tl-card .crm-tl-chevron { transform:rotate(-90deg); }
+
+/* HOR block */
+.crm-hor-card {
+  display:flex; align-items:center; gap:10px; flex:1 1 240px;
+  padding:12px 16px; border-radius:12px; cursor:pointer;
+  background:rgba(62,207,122,0.10); border:1px solid rgba(62,207,122,0.28);
+  transition:background .15s;
+}
+.crm-hor-card:hover { background:rgba(62,207,122,0.18); }
+.crm-hor-card .crm-avatar { background:linear-gradient(135deg,#6fe09a,#1f8a4c); width:32px; height:32px; font-size:12px; }
+.crm-hor-label { font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:#7fe6a8; }
+.crm-hor-name { font-size:13.5px; font-weight:700; }
+
+.crm-person {
+  display:flex; align-items:center; gap:10px;
+  padding:7px 9px; border-radius:9px; cursor:pointer;
+  transition:background .15s ease, opacity .2s ease, transform .2s ease;
+}
+.crm-person:hover { background:var(--input); }
+
+.crm-tl-card { border-radius:11px; padding:9px 10px; margin-bottom:7px; position:relative; cursor:pointer; }
+.crm-col.sales .crm-tl-card { background:rgba(79,140,255,0.10); border:1px solid rgba(79,140,255,0.28); }
+.crm-col.retention .crm-tl-card { background:rgba(62,207,122,0.10); border:1px solid rgba(62,207,122,0.28); }
+
+.crm-avatar {
+  width:28px; height:28px; border-radius:50%; object-fit:cover;
+  background:#3a3a45; display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; flex-shrink:0; color:#fff;
+}
+.crm-tl-card .crm-avatar { width:32px; height:32px; font-size:12px; }
+.crm-col.sales .crm-tl-card .crm-avatar { background:linear-gradient(135deg,#6fa6ff,#3a66d8); }
+.crm-col.retention .crm-tl-card .crm-avatar { background:linear-gradient(135deg,#6fe09a,#1f8a4c); }
+
+.crm-person-name { font-size:13px; }
+.crm-tl-name { font-size:13.5px; font-weight:700; }
+.crm-tl-role { font-size:9.5px; text-transform:uppercase; letter-spacing:0.05em; }
+.crm-col.sales .crm-tl-role { color:#7fb0ff; }
+.crm-col.retention .crm-tl-role { color:#7fe6a8; }
+
+.crm-member-list {
+  margin-left:6px; padding-left:11px; border-left:2px solid var(--border);
+  display:flex; flex-direction:column; gap:2px;
+  max-height:600px; opacity:1; overflow:hidden;
+  transition:max-height .25s ease, opacity .2s ease, margin .25s ease, padding .25s ease;
+}
+.crm-tl-group.tl-collapsed .crm-member-list {
+  max-height:0; opacity:0; margin-top:0; margin-bottom:0; padding-top:0; padding-bottom:0; border-left-color:transparent;
+}
+.crm-col.sales .crm-member-list { border-left-color:rgba(79,140,255,0.22); }
+.crm-col.retention .crm-member-list { border-left-color:rgba(62,207,122,0.22); }
+
+.crm-empty-team { color:var(--muted); font-style:italic; font-size:11.5px; padding:4px 9px; }
+
+mark.crm-hl { background:rgba(255,210,80,0.32); color:inherit; border-radius:3px; padding:0 2px; }
+.crm-person.crm-match { background:rgba(255,210,80,0.10); animation:crmPulse 1.1s ease 1; }
+@keyframes crmPulse {
+  0% { box-shadow:0 0 0 0 rgba(255,210,80,0.45); }
+  70% { box-shadow:0 0 0 7px rgba(255,210,80,0); }
+  100% { box-shadow:0 0 0 0 rgba(255,210,80,0); }
+}
+.crm-person.crm-fade { opacity:0.2; }
+.crm-tl-card.crm-fade { opacity:0.2; }
+
+.crm-empty-state { color:var(--muted); padding:40px 0; text-align:center; }
+
+/* Quick action shown on hover of a person/lead card to jump to their profile */
+.crm-go-profile {
+  margin-left:auto;
+  font-size:11px;
+  color:var(--accent);
+  opacity:0;
+  transition:opacity .15s ease;
+  flex-shrink:0;
+}
+.crm-person:hover .crm-go-profile,
+.crm-tl-card:hover .crm-go-profile,
+.crm-head-person:hover .crm-go-profile { opacity:1; }
+
+.profile-box {
+  max-width:420px;
+}
+
+.profile-box h2 { margin-bottom:4px; }
+.profile-box .label { color:var(--muted); }
+
+.profile-avatar-wrap {
+  position:relative;
+  width:84px;
+  height:84px;
+  margin:0 auto 16px;
+}
+
+.profile-avatar {
+  width:84px;
+  height:84px;
+  border-radius:50%;
+  object-fit:cover;
+  background:linear-gradient(135deg, var(--accent), #8a5aff);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:32px;
+  font-weight:700;
+  color:#fff;
+}
+
+.profile-avatar-edit {
+  position:absolute;
+  bottom:-2px;
+  right:-2px;
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  border:none;
+  background:var(--card);
+  color:var(--text);
+  cursor:pointer;
+  font-size:14px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.4);
+}
+
+.profile-avatar-edit:hover { background:var(--border); }
+
+/* ====================== DIRECT MESSAGES ====================== */
+
+.dm-layout {
+  flex:1;
+  display:flex;
+  min-width:0;
+}
+
+.dm-list {
+  width:280px;
+  flex-shrink:0;
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+
+.dm-list-header {
+  padding:14px 16px 10px;
+  flex-shrink:0;
+}
+
+.dm-search {
+  width:100%;
+  padding:9px 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--input);
+  color:var(--text);
+  font-size:13px;
+  outline:none;
+  box-sizing:border-box;
+}
+
+.dm-search:focus { border-color:#6a6aff; }
+
+.dm-threads {
+  flex:1;
+  overflow:auto;
+  padding:4px 8px;
+}
+
+.dm-thread-item, .dm-directory-item {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 8px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.dm-thread-item:hover, .dm-directory-item:hover { background:var(--card); }
+.dm-thread-item.active { background:#3a3aff33; }
+
+.dm-thread-avatar, .dm-directory-avatar {
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  object-fit:cover;
+  background:linear-gradient(135deg, var(--accent), #8a5aff);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:14px;
+  font-weight:700;
+  color:#fff;
+  flex-shrink:0;
+}
+
+.pinned-room-avatar {
+  background:linear-gradient(135deg, #3a3aff, #6a6aff);
+  font-size:17px;
+}
+
+.dm-thread-item.pinned-room {
+  background:rgba(106,106,255,0.06);
+}
+.dm-thread-item.pinned-room:hover { background:rgba(106,106,255,0.14); }
+.dm-thread-item.pinned-room.active { background:#3a3aff33; }
+
+.dm-thread-body { min-width:0; flex:1; }
+.dm-thread-name { font-weight:600; font-size:14px; }
+.dm-thread-preview {
+  font-size:12px;
+  color:var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.dm-section-label {
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  color:var(--muted);
+  padding:14px 8px 6px;
+}
+
+.dm-empty {
+  color:var(--muted);
+  font-size:13px;
+  text-align:center;
+  padding:30px 16px;
+}
+
+.dm-chat-area {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+
+.dm-chat-placeholder {
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--muted);
+  font-size:14px;
+  text-align:center;
+  padding:20px;
+}
+
+.dm-chat-header {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:14px 18px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  cursor:pointer;
+  transition: background 0.15s;
+}
+.dm-chat-header:hover { background: var(--card); }
+
+.dm-chat-header .dm-thread-name { font-size:15px; }
+
+.dm-readonly-banner {
+  flex-shrink:0;
+  padding:10px 18px;
+  font-size:12px;
+  color:var(--muted);
+  text-align:center;
+  border-top:1px solid var(--border);
+  background:var(--card);
+}
+
+/* ====================== TICKETS ====================== */
+
+/* ===== TICKETS — Kanban redesign ===== */
+
+.tickets-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:16px;
+  gap:12px;
+}
+
+.tickets-header h2 {
+  font-size:18px;
+  font-weight:700;
+  margin:0;
+  letter-spacing:-0.01em;
+}
+
+.tickets-toolbar {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:16px;
+}
+
+.tickets-toolbar select {
+  background:var(--card);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:7px 10px;
+  font-size:13px;
+  cursor:pointer;
+}
+
+.tickets-view-toggle {
+  display:flex;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:8px;
+  overflow:hidden;
+  margin-left:auto;
+}
+
+.tickets-view-btn {
+  background:none;
+  border:none;
+  color:var(--muted);
+  padding:6px 11px;
+  font-size:14px;
+  cursor:pointer;
+  transition:background 0.15s, color 0.15s;
+}
+
+.tickets-view-btn.active {
+  background:var(--accent);
+  color:#fff;
+}
+
+.btn-create-ticket {
+  flex:none;
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  border-radius:10px;
+  padding:9px 16px;
+  font-weight:600;
+  cursor:pointer;
+  font-size:13px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  white-space:nowrap;
+}
+
+.btn-create-ticket:hover { filter:brightness(1.1); }
+
+/* ---- Stats bar ---- */
+.tickets-stats {
+  display:flex;
+  gap:10px;
+  margin-bottom:18px;
+  flex-wrap:wrap;
+}
+
+.tickets-stat-pill {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:8px 14px;
+  font-size:13px;
+  font-weight:500;
+}
+
+.tickets-stat-pill .stat-dot {
+  width:8px; height:8px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+
+.tickets-stat-pill .stat-count {
+  font-size:17px;
+  font-weight:700;
+  line-height:1;
+}
+
+/* ---- Kanban board ---- */
+.tickets-kanban {
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:12px;
+  align-items:start;
+  min-width:0;
+}
+
+.kanban-col {
+  background:var(--card);
+  border-radius:14px;
+  border:1px solid var(--border);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+.kanban-col-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px 14px 10px;
+  border-bottom:1px solid var(--border);
+  gap:8px;
+}
+
+.kanban-col-title {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-weight:600;
+  font-size:13px;
+}
+
+.kanban-col-dot {
+  width:9px; height:9px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+
+.kanban-col-count {
+  background:var(--border);
+  color:var(--muted);
+  font-size:11px;
+  font-weight:700;
+  padding:2px 7px;
+  border-radius:999px;
+  min-width:22px;
+  text-align:center;
+}
+
+.kanban-col-body {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:10px;
+  min-height:60px;
+}
+
+/* ---- Kanban ticket card ---- */
+.ticket-card {
+  background:var(--panel);
+  border-radius:10px;
+  padding:11px 13px;
+  border:1px solid var(--border);
+  cursor:pointer;
+  transition:border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+  position:relative;
+}
+
+.ticket-card:hover {
+  border-color:var(--accent);
+  transform:translateY(-1px);
+  box-shadow:0 4px 16px rgba(0,0,0,0.18);
+}
+
+.ticket-card-accent {
+  position:absolute;
+  left:0; top:0; bottom:0;
+  width:3px;
+  border-radius:3px 0 0 3px;
+}
+
+.ticket-card-id {
+  font-size:10px;
+  font-family:monospace;
+  color:var(--muted);
+  margin-bottom:4px;
+  letter-spacing:0.04em;
+}
+
+.ticket-card-type {
+  font-weight:600;
+  font-size:13px;
+  margin-bottom:6px;
+  line-height:1.3;
+}
+
+.ticket-card-desc {
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:9px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  line-height:1.45;
+}
+
+.ticket-card-footer {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.ticket-card-people {
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+
+.ticket-card-avatar {
+  width:20px; height:20px;
+  border-radius:50%;
+  object-fit:cover;
+  background:var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:9px;
+  font-weight:700;
+  flex-shrink:0;
+  border:1.5px solid var(--panel);
+  margin-left:-5px;
+}
+
+.ticket-card-avatar:first-child { margin-left:0; }
+
+.ticket-card-date {
+  font-size:11px;
+  color:var(--muted);
+  white-space:nowrap;
+}
+
+/* ---- Flat list view (fallback) ---- */
+.tickets-list {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.ticket-list-row {
+  background:var(--card);
+  border-radius:11px;
+  padding:12px 15px;
+  border:1px solid var(--border);
+  cursor:pointer;
+  display:grid;
+  grid-template-columns:1fr auto;
+  align-items:center;
+  gap:12px;
+  transition:border-color 0.15s;
+}
+
+.ticket-list-row:hover { border-color:var(--accent); }
+
+.ticket-list-left { min-width:0; }
+
+.ticket-list-top {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:3px;
+}
+
+.ticket-id { color:var(--muted); font-size:11px; font-family:monospace; }
+
+.ticket-type {
+  font-weight:600;
+  font-size:13px;
+}
+
+.ticket-list-desc {
+  font-size:12px;
+  color:var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.ticket-list-right {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:5px;
+  flex-shrink:0;
+}
+
+.ticket-status-badge {
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+  padding:3px 9px;
+  border-radius:999px;
+}
+
+.ticket-status-open { background:#3a3a1e; color:#e0d27a; }
+.ticket-status-in_progress { background:#1e3a3a; color:#7adada; }
+.ticket-status-resolved { background:#1e3a1e; color:#7be07b; }
+.ticket-status-closed { background:#2a2a30; color:var(--muted); }
+
+.ticket-meta {
+  display:flex;
+  gap:10px;
+  font-size:11px;
+  color:var(--muted);
+  align-items:center;
+}
+
+.ticket-meta-person {
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+
+.ticket-meta-avatar {
+  width:16px; height:16px;
+  border-radius:50%;
+  object-fit:cover;
+  background:var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:8px;
+  font-weight:700;
+  flex-shrink:0;
+}
+
+.tickets-empty {
+  color:var(--muted);
+  text-align:center;
+  padding:48px 0;
+  font-size:14px;
+}
+
+.kanban-empty {
+  color:var(--muted);
+  font-size:12px;
+  text-align:center;
+  padding:16px 8px;
+  opacity:0.6;
+}
+
+/* Modal */
+.modal-overlay {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.55);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+  padding:20px;
+}
+
+.modal-overlay.show { display:flex; }
+
+/* ===== Profile quick-view modal ===== */
+
+.profile-modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0);
+  display:none; align-items:center; justify-content:center;
+  z-index:1200; padding:20px;
+  transition:background 0.25s ease;
+}
+.profile-modal-overlay.show { display:flex; background:rgba(0,0,0,0.65); }
+.profile-modal-overlay.closing { background:rgba(0,0,0,0); transition:background 0.18s ease; }
+
+.profile-modal-card {
+  width:100%; max-width:360px;
+  background:var(--panel);
+  border-radius:24px;
+  box-shadow:0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06);
+  transform:scale(0.88) translateY(20px); opacity:0;
+  transition:transform 0.3s cubic-bezier(.2,.9,.3,1.2), opacity 0.22s ease;
+  overflow:hidden;
+}
+.profile-modal-overlay.show .profile-modal-card { transform:scale(1) translateY(0); opacity:1; }
+.profile-modal-overlay.closing .profile-modal-card {
+  transform:scale(0.92) translateY(10px); opacity:0;
+  transition:transform 0.18s ease, opacity 0.18s ease;
+}
+
+/* banner — taller, with subtle mesh */
+.profile-modal-banner {
+  height:110px;
+  border-radius:0;
+  background:
+    radial-gradient(ellipse 80% 120% at 20% -10%, rgba(255,255,255,0.22), transparent 55%),
+    radial-gradient(ellipse 60% 80% at 85% 110%, rgba(255,110,200,0.3), transparent 55%),
+    linear-gradient(130deg, var(--accent) 0%, #8a5aff 50%, #ff6fae 100%);
+  position:relative; flex-shrink:0;
+}
+
+.profile-modal-close {
+  position:absolute; top:12px; right:12px;
+  width:30px; height:30px; border-radius:50%;
+  border:none; background:rgba(0,0,0,0.28);
+  color:#fff; font-size:15px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  backdrop-filter:blur(6px);
+  transition:background .15s;
+}
+.profile-modal-close:hover { background:rgba(0,0,0,0.5); }
+
+/* avatar sits half on banner, half on body */
+.profile-modal-body {
+  padding:0 24px 24px;
+  text-align:center;
+}
+
+.profile-modal-avatar-wrap {
+  width:96px; height:96px;
+  margin:0 auto;
+  margin-top:-48px;
+  position:relative; z-index:2;
+  margin-bottom:14px;
+}
+
+.profile-modal-avatar {
+  width:96px; height:96px;
+  border-radius:50%;
+  object-fit:cover;
+  background:linear-gradient(135deg, var(--accent), #8a5aff);
+  display:flex; align-items:center; justify-content:center;
+  font-size:34px; font-weight:700; color:#fff;
+  /* thick panel-colored ring so gradient doesn't bleed onto photo */
+  border:4px solid var(--panel);
+  box-shadow:0 0 0 1px rgba(255,255,255,0.12), 0 8px 24px rgba(0,0,0,0.35);
+}
+
+.profile-modal-name {
+  font-size:21px; font-weight:800; letter-spacing:-0.3px;
+  margin-bottom:3px; line-height:1.2;
+}
+.profile-modal-username { color:var(--muted); margin-bottom:16px; font-size:13px; }
+
+/* role pill — full-width, centered */
+.profile-modal-role-pill {
+  display:inline-flex; align-items:center; gap:7px;
+  padding:7px 18px; border-radius:999px;
+  font-size:12.5px; font-weight:700; color:#fff;
+  margin-bottom:16px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.25);
+}
+.profile-modal-role-pill .dot { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.6); }
+
+/* info rows */
+.profile-modal-meta {
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:16px;
+  padding:4px 0;
+  text-align:left;
+  margin-bottom:18px;
+}
+.profile-modal-meta-row {
+  display:flex; align-items:center;
+  justify-content:space-between;
+  padding:10px 16px;
+  font-size:13px;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+}
+.profile-modal-meta-row:last-child { border-bottom:none; }
+.profile-modal-meta-row .k { color:var(--muted); font-size:12px; }
+.profile-modal-meta-row .v { font-weight:700; max-width:60%; text-align:right; }
+
+/* team chip inside meta */
+.profile-modal-team-chip {
+  display:inline-flex; align-items:center; gap:5px;
+  background:rgba(255,255,255,0.07); border-radius:999px;
+  padding:3px 10px; font-size:12px; font-weight:600;
+}
+.profile-modal-team-chip .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); }
+
+/* action buttons */
+.profile-modal-actions { display:flex; gap:8px; }
+.profile-modal-actions button {
+  flex:1; padding:13px 10px; border:none; border-radius:14px;
+  font-weight:700; cursor:pointer; font-size:13.5px;
+  font-family:inherit; transition:filter .15s, transform .12s;
+}
+.profile-modal-actions button:hover { filter:brightness(1.1); }
+.profile-modal-actions button:active { transform:scale(0.97); }
+.profile-modal-actions .btn-primary {
+  background:linear-gradient(135deg, var(--accent), #7a5aef);
+  color:#fff; box-shadow:0 4px 16px rgba(106,106,255,0.35);
+}
+.profile-modal-actions .btn-secondary {
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.1);
+  color:var(--text);
+}
+
+.profile-modal-loading { padding:60px 20px; text-align:center; color:var(--muted); }
+
+/* badge row kept for backward compat but hidden — using role-pill now */
+.profile-modal-badge-row { display:none; }
+
+.modal-box {
+  background:var(--panel);
+  border-radius:16px;
+  padding:28px;
+  width:100%;
+  max-width:480px;
+  max-height:90vh;
+  overflow:auto;
+}
+
+.modal-box h2 { margin-top:0; margin-bottom:18px; }
+
+.form-group { margin-bottom:16px; }
+
+.form-group label {
+  display:block;
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+
+.form-group select,
+.form-group textarea,
+.form-group input[type="text"] {
+  width:100%;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--input);
+  color:var(--text);
+  font-family:inherit;
+  font-size:14px;
+  outline:none;
+}
+
+.form-group textarea {
+  min-height:110px;
+  resize:vertical;
+}
+
+.char-count {
+  font-size:11px;
+  color:var(--muted);
+  text-align:right;
+  margin-top:4px;
+}
+
+.char-count.invalid { color:#ff8a8a; }
+
+.assignee-search {
+  position:relative;
+}
+
+.assignee-results {
+  position:absolute;
+  top:100%;
+  left:0;
+  right:0;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  margin-top:4px;
+  max-height:180px;
+  overflow:auto;
+  z-index:10;
+  display:none;
+}
+
+.assignee-results.show { display:block; }
+
+.assignee-result-item {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  cursor:pointer;
+  font-size:13px;
+}
+
+.assignee-result-item:hover { background:var(--border); }
+
+.assignee-result-avatar {
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  object-fit:cover;
+  background:#3a3a45;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:10px;
+  font-weight:700;
+  flex-shrink:0;
+}
+
+.assignee-selected {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:var(--card);
+  border-radius:10px;
+  padding:8px 12px;
+  margin-top:8px;
+  font-size:13px;
+}
+
+.assignee-selected button {
+  margin-left:auto;
+  flex:none;
+  background:none;
+  border:none;
+  color:var(--muted);
+  cursor:pointer;
+  font-size:16px;
+  padding:0;
+}
+
+.file-drop {
+  border:1.5px dashed var(--border);
+  border-radius:10px;
+  padding:16px;
+  text-align:center;
+  cursor:pointer;
+  font-size:13px;
+  color:var(--muted);
+}
+
+.file-drop:hover { border-color:var(--accent); }
+
+.file-list {
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-top:8px;
+}
+
+.file-list-item {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:var(--card);
+  border-radius:8px;
+  padding:6px 10px;
+  font-size:12px;
+}
+
+.file-list-item button {
+  background:none;
+  border:none;
+  color:#ff8a8a;
+  cursor:pointer;
+  font-size:14px;
+}
+
+.modal-actions {
+  display:flex;
+  gap:10px;
+  margin-top:20px;
+}
+
+.modal-actions button {
+  flex:1;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.btn-cancel { background:var(--card); color:var(--text); }
+.btn-submit { background:var(--accent); color:#fff; }
+.btn-submit:disabled { opacity:0.6; cursor:default; }
+
+.field-error {
+  color:#ff8a8a;
+  font-size:12px;
+  margin-top:4px;
+  min-height:14px;
+}
+
+/* Ticket detail modal */
+.ticket-detail-row {
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:10px;
+  font-size:13px;
+}
+
+.ticket-detail-row .label { color:var(--muted); }
+
+.ticket-detail-attachments {
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-top:6px;
+}
+
+.ticket-detail-attachments a {
+  color:var(--accent);
+  font-size:13px;
+  text-decoration:none;
+}
+
+.status-select-row {
+  margin-top:18px;
+}
+
+/* Agent status buttons */
+.status-btn {
+  padding:4px 10px;
+  border-radius:6px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text);
+  cursor:pointer;
+  font-size:12px;
+  transition:background 0.15s,border-color 0.15s;
+}
+.status-btn:hover { background:var(--hover); border-color:var(--accent); }
+.status-btn.active-lunch { background:#3a1e1e; border-color:#e07a7a; color:#e07a7a; }
+.status-btn.active-break { background:#1e3a1e; border-color:#7adaa0; color:#7adaa0; }
+
+/* Status confirm modal */
+#statusConfirmModal .modal-box { max-width:380px; text-align:center; }
+.break-log-list { list-style:none; padding:0; margin:8px 0; font-size:13px; color:var(--muted); }
+/* ===== Telegram-style message context menu ===== */
+.msg-ctx-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  backdrop-filter: blur(0px);
+  z-index: 1000;
+  opacity: 0;
+  transition: background 0.22s ease, backdrop-filter 0.22s ease, opacity 0.22s ease;
+  pointer-events: none;
+}
+.msg-ctx-overlay.show {
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(2px);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.msg-ctx-clone-wrap {
+  position: fixed;
+  z-index: 1001;
+  pointer-events: none;
+  transform: scale(0.97);
+  opacity: 0;
+  transition: transform 0.22s cubic-bezier(.2,.9,.3,1.2), opacity 0.18s ease;
+}
+.msg-ctx-clone-wrap.show {
+  transform: scale(1.04);
+  opacity: 1;
+}
+.msg-ctx-clone-wrap .bubble {
+  box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+  margin: 0;
+}
+
+.msg-ctx-menu {
+  position: fixed;
+  z-index: 1002;
+  min-width: 200px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.4);
+  padding: 6px;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.95);
+  transform-origin: top right;
+  transition: opacity 0.18s ease, transform 0.18s cubic-bezier(.2,.9,.3,1.2);
+  pointer-events: none;
+}
+.msg-ctx-menu.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+.msg-ctx-menu.menu-flip { transform-origin: bottom right; }
+.msg-ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+.msg-ctx-item:hover, .msg-ctx-item:active { background: var(--card); }
+.msg-ctx-item.danger { color: #e8645f; }
+.msg-ctx-item.danger:hover { background: rgba(232,100,95,0.12); }
+.msg-ctx-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+
+.bubble { cursor: default; -webkit-touch-callout: none; }
+.bubble.long-pressing { transition: transform 0.45s ease; transform: scale(0.98); user-select: none; }
+.break-log-list li { padding:3px 0; border-bottom:1px solid var(--border); }
+.break-timer-big { font-size:28px; font-weight:700; margin:12px 0; letter-spacing:1px; }
+.break-timer-big.warning { color:#e07a7a; }
+#breakLockscreen { color: var(--text); }
+
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+  <div class="logo" title="Safari Office">🧭</div>
+
+  <div class="tab active" data-view="dm" onclick="switchView('dm')" title="">
+    <span class="tab-icon" style="position:relative;">💬<span class="tab-badge" id="dmBadge"></span></span>
+    <span class="tab-label" data-i18n="chatsShort">Chats</span>
+  </div>
+  <div class="tab" data-view="crm" onclick="switchView('crm')" title="">
+    <span class="tab-icon">📊</span>
+    <span class="tab-label" data-i18n="crm">CRM</span>
+  </div>
+  <div class="tab" data-view="tickets" onclick="switchView('tickets')" title="">
+    <span class="tab-icon">🎫</span>
+    <span class="tab-label" data-i18n="ticketsShort">Tickets</span>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="logout-btn" onclick="logout()" title="">
+      <span class="tab-icon">🚪</span>
+      <span data-i18n="logout">Logout</span>
+    </button>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="topbar">
+    <div id="title" data-i18n="chatsShort">Chats</div>
+    <div class="topbar-right">
+      <div id="statusTopbar" onclick="requestStatusChange(statusTopbarClickTarget())" title="Change status" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:13px;user-select:none;">
+        <span id="myStatusDot" style="width:9px;height:9px;border-radius:50%;background:#7be07b;display:inline-block;flex-shrink:0"></span>
+        <span id="myStatusLabel">Online</span>
+        <span id="myStatusTimer" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div class="userbox" id="userbox" onclick="switchView('profile')" data-i18n="loadingUser">Loading...</div>
+      <div id="prefsWidget"></div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- UNIFIED CHATS VIEW: pinned Global + Team rooms on top, then personal DMs -->
+    <div class="dm-layout" id="dmView" style="display:none;">
+      <div class="dm-list">
+        <div class="dm-list-header">
+          <input class="dm-search" id="dmSearchInput" data-i18n-placeholder="dmSearchPlaceholder" placeholder="Search people...">
+        </div>
+        <div class="dm-threads" id="dmThreads"></div>
+      </div>
+      <div class="dm-chat-area">
+        <div class="dm-chat-placeholder" id="dmPlaceholder" data-i18n="dmSelectPrompt">Select a conversation or search for someone to start chatting.</div>
+        <div id="dmChatActive" style="display:none; flex:1; flex-direction:column; min-width:0;">
+          <div class="dm-chat-header" id="dmChatHeader"></div>
+          <div class="messages" id="dmMessages" style="flex:1; overflow:auto; padding:20px;"></div>
+          <div class="dm-readonly-banner" id="dmReadonlyBanner" style="display:none;" data-i18n="chatComingSoon">This chat is read-only for now — messaging will be enabled soon.</div>
+          <div class="input" id="dmInputBar">
+            <button class="attach-btn" id="dmAttachBtn" title="Attach file or photo">📎</button>
+            <input type="file" id="dmFileInput" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.csv" style="display:none;">
+            <input id="dmMsgInput" data-i18n-placeholder="writeMessage" placeholder="Write message...">
+            <button class="emoji-btn" id="dmEmojiBtn" title="Emoji">😊</button>
+            <button class="voice-btn" id="dmVoiceBtn" title="Voice message">🎤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CRM VIEW (hidden by default) -->
+    <div class="panel-view" id="crmView" style="display:none;">
+      <div class="crm-header">
+        <div class="crm-title-block">
+          <h2 id="crmTitle" data-i18n="crm">📊 CRM</h2>
+          <div class="crm-subtitle" id="crmSubtitle" data-i18n="crmSubtitleOrg">Organization chart</div>
+        </div>
+        <div class="crm-view-toggle" id="crmViewToggle" data-mode="tree">
+          <div class="crm-view-toggle-knob"></div>
+          <span class="crm-view-toggle-opt active" data-mode-opt="tree" onclick="crmSetViewMode('tree')">🌳 <span data-i18n="crmViewTree">Дерево</span></span>
+          <span class="crm-view-toggle-opt" data-mode-opt="list" onclick="crmSetViewMode('list')">📋 <span data-i18n="crmViewList">Список</span></span>
+          <span class="crm-view-toggle-opt" data-mode-opt="agents" onclick="crmSetViewMode('agents')">👥 Агенты</span>
+        </div>
+        <div class="crm-search-wrap">
+          <span class="crm-search-icon">🔍</span>
+          <input class="crm-search" id="crmSearch" type="text" data-i18n-placeholder="crmSearchPlaceholder" placeholder="Search agents, leads…" autocomplete="off">
+          <span class="crm-search-meta" id="crmSearchMeta"></span>
+        </div>
+      </div>
+      <div class="crm-legend">
+        <span class="crm-legend-chip"><span class="crm-legend-dot sales"></span><span data-i18n="crmLegendSales">Sales</span></span>
+        <span class="crm-legend-chip"><span class="crm-legend-dot retention"></span><span data-i18n="crmLegendRetention">Retention</span></span>
+      </div>
+      <div id="crmContent" data-i18n="loading">Loading...</div>
+      <div id="crmAgentsView" style="display:none;">
+        <div class="crm-agents-bar">
+          <span class="crm-agents-bar-label">Сортировка:</span>
+          <button class="crm-agents-sort-btn active" onclick="crmSetAgentSort('alpha')">A → Z</button>
+          <button class="crm-agents-sort-btn" onclick="crmSetAgentSort('team')">По команде</button>
+          <button class="crm-agents-sort-btn" onclick="crmSetAgentSort('role')">По роли</button>
+          <button class="crm-agents-sort-btn" onclick="crmSetAgentSort('department')">По отделу</button>
+        </div>
+        <div id="crmAgentsList"></div>
+      </div>
+    </div>
+
+    <!-- TICKETS VIEW (hidden by default) -->
+    <div class="panel-view" id="ticketsView" style="display:none;">
+      <div class="tickets-header">
+        <h2 data-i18n="tickets" style="margin:0;">🎫 Tickets</h2>
+        <button class="btn-create-ticket" onclick="openCreateTicketModal()" data-i18n="createTicket">+ Create Ticket</button>
+      </div>
+      <div class="tickets-stats" id="ticketsStats"></div>
+      <div class="tickets-toolbar">
+        <select id="ticketStatusFilter" onchange="renderTicketsList()">
+          <option value="" data-i18n="filterAllStatuses">All statuses</option>
+          <option value="open" data-i18n="statusOpen">Open</option>
+          <option value="in_progress" data-i18n="statusInProgress">In Progress</option>
+          <option value="resolved" data-i18n="statusResolved">Resolved</option>
+          <option value="closed" data-i18n="statusClosed">Closed</option>
+        </select>
+        <select id="ticketTypeFilter" onchange="renderTicketsList()">
+          <option value="" data-i18n="filterAllTypes">All types</option>
+        </select>
+        <div class="tickets-view-toggle">
+          <button class="tickets-view-btn active" id="ticketViewKanban" onclick="setTicketView('kanban')" title="Kanban">⊞</button>
+          <button class="tickets-view-btn" id="ticketViewList" onclick="setTicketView('list')" title="List">☰</button>
+        </div>
+      </div>
+      <div id="ticketsList" data-i18n="loading">Loading...</div>
+    </div>
+
+    <!-- PROFILE VIEW (hidden by default) -->
+    <div class="panel-view" id="profileView" style="display:none;">
+      <div class="profile-box card">
+        <div class="profile-avatar-wrap">
+          <div class="profile-avatar" id="profileAvatar">-</div>
+          <button class="profile-avatar-edit" id="profileAvatarEditBtn" title="Change photo" data-i18n-title="changePhoto">✎</button>
+          <input type="file" id="avatarInput" accept=".jpg,.jpeg,.png,.gif,.webp" style="display:none;">
+        </div>
+        <h2 id="profileName">-</h2>
+        <p><span class="label" data-i18n="username">Username</span>: <span id="profileUsername">-</span></p>
+        <p><span class="label" data-i18n="team">Team</span>: <span id="profileTeam">-</span></p>
+        <p><span class="label" data-i18n="role">Role</span>: <span id="profileRole">-</span></p>
+        <button onclick="goToProfilePage()" data-i18n="openProfilePage" target="_blank">Open my profile page</button>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right" id="rightPanel">
+      <div class="card" id="infoCard" data-i18n="loadingUser">Loading user...</div>
+      <div class="card">📌 <span data-i18n="activeRoom">Active room</span>: <span id="room">GLOBAL</span></div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- STATUS CONFIRM MODAL -->
+<div class="modal-overlay" id="statusConfirmModal">
+  <div class="modal-box">
+    <h2 id="statusConfirmTitle">Lunch break?</h2>
+    <p id="statusConfirmDesc" style="color:var(--muted);font-size:14px;margin:6px 0 16px"></p>
+    <div id="statusActivePanel" style="display:none">
+      <div class="break-timer-big" id="breakTimerDisplay">45:00</div>
+      <p id="breakTimerLabel" style="font-size:12px;color:var(--muted);margin:0 0 12px"></p>
+      <ul class="break-log-list" id="breakLogList"></ul>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px;">
+        <button onclick="extendBreak(15)" class="status-btn">+15 min</button>
+        <button onclick="addLunchFromBreak()" class="status-btn" id="addLunchBtn">+Lunch 45 min</button>
+        <button onclick="confirmStatusChange('online')" class="status-btn" style="background:#1e3a1e;border-color:#7be07b;color:#7be07b;">✅ I'm back</button>
+      </div>
+    </div>
+    <div id="statusConfirmButtons" style="display:flex;gap:10px;justify-content:center;margin-top:4px;">
+      <button onclick="confirmStatusChange(pendingStatus)" style="background:var(--accent);color:#000;border:none;border-radius:6px;padding:8px 20px;cursor:pointer;font-weight:600;" id="statusConfirmYes">Yes, go</button>
+      <button onclick="closeStatusModal()" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 20px;cursor:pointer;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE TICKET MODAL -->
+<div class="modal-overlay" id="createTicketModal">
+  <div class="modal-box">
+    <h2 data-i18n="createTicket">Create Ticket</h2>
+
+    <div class="form-group">
+      <label data-i18n="ticketType">Problem type</label>
+      <select id="ticketTypeInput">
+        <option value="">—</option>
+      </select>
+      <div class="field-error" id="ticketTypeError"></div>
+    </div>
+
+    <div class="form-group">
+      <label data-i18n="ticketDescription">Description</label>
+      <textarea id="ticketDescInput" data-i18n-placeholder="ticketDescPlaceholder" placeholder="Опишите проблему подробно…" maxlength="5000"></textarea>
+      <div class="char-count" id="ticketDescCount">0 / 5000</div>
+      <div class="field-error" id="ticketDescError"></div>
+    </div>
+
+    <div class="form-group">
+      <label data-i18n="ticketAssignee">Assign to (your team)</label>
+      <div class="assignee-search">
+        <input type="text" id="assigneeSearchInput" data-i18n-placeholder="searchTeamMember" placeholder="Search team member...">
+        <div class="assignee-results" id="assigneeResults"></div>
+      </div>
+      <div id="assigneeSelectedBox"></div>
+      <div class="field-error" id="ticketAssigneeError"></div>
+    </div>
+
+    <div class="form-group">
+      <label data-i18n="ticketAttachments">Attachments (optional)</label>
+      <div class="file-drop" onclick="document.getElementById('ticketFileInput').click()" data-i18n="clickToAttach">Click to attach files (png, jpg, webp, pdf, docx — max 20MB each)</div>
+      <input type="file" id="ticketFileInput" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx" style="display:none;">
+      <div class="file-list" id="ticketFileList"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeCreateTicketModal()" data-i18n="cancel">Cancel</button>
+      <button class="btn-submit" id="submitTicketBtn" onclick="submitTicket()" data-i18n="submitTicket">Submit Ticket</button>
+    </div>
+  </div>
+</div>
+
+<!-- TICKET DETAIL MODAL -->
+<div class="modal-overlay" id="ticketDetailModal">
+  <div class="modal-box" id="ticketDetailBox">
+    <!-- populated by JS -->
+  </div>
+</div>
+
+<!-- PROFILE QUICK-VIEW MODAL (Telegram-style popup) -->
+<div class="profile-modal-overlay" id="profileModalOverlay" onclick="if(event.target===this) closeProfileModal()">
+  <div class="profile-modal-card" id="profileModalCard">
+    <div class="profile-modal-banner">
+      <button class="profile-modal-close" onclick="closeProfileModal()" title="Close">✕</button>
+    </div>
+    <div class="profile-modal-body" id="profileModalBody">
+      <div class="profile-modal-loading" data-i18n="loading">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+
+<script src="/shared.js"></script>
+<script>
+renderSafariPrefsWidget(document.getElementById("prefsWidget"));
+SafariPrefs.init();
+
+const socket = io();
+
+let user = {};
+let currentView = "dm";
+
+function avatarHtml(name, avatarUrl, sizeClass) {
+  if (avatarUrl) {
+    return `<img class="${sizeClass}" src="${avatarUrl}" alt="${escapeHtml(name)}">`;
+  }
+  const initial = (name || "?").trim().charAt(0).toUpperCase() || "?";
+  return `<div class="${sizeClass}">${escapeHtml(initial)}</div>`;
+}
+
+/* ====================== LOAD USER ====================== */
+async function loadUser() {
+  try {
+    const res = await fetch("/me");
+
+    if (!res.ok) {
+      if (!isLoggingOut) window.location.replace("/login.html");
+      return;
+    }
+
+    user = await res.json();
+
+    document.getElementById("userbox").innerHTML = `
+      ${avatarHtml(user.name, user.avatar, "userbox-avatar")}
+      <span>${escapeHtml(user.name)} | ${escapeHtml(user.team || SafariPrefs.t("noTeam"))}</span>
+    `;
+
+    document.getElementById("infoCard").innerHTML = `
+      <b>${escapeHtml(user.name)}</b><br>
+      ${SafariPrefs.t("team")}: ${escapeHtml(user.team || SafariPrefs.t("noTeam"))}<br>
+      ${SafariPrefs.t("role")}: ${escapeHtml(user.role)}
+    `;
+
+    document.getElementById("profileAvatar").outerHTML = avatarHtml(user.name, user.avatar, "profile-avatar")
+      .replace('class="profile-avatar"', 'class="profile-avatar" id="profileAvatar"');
+    document.getElementById("profileName").innerText = user.name;
+    document.getElementById("profileUsername").innerText = user.username;
+    document.getElementById("profileTeam").innerText = user.team || SafariPrefs.t("noTeam");
+    document.getElementById("profileRole").innerText = user.role;
+
+    await maybeOpenDmFromQuery();
+
+    // Default landing view: Chats (Global room pinned at top), unless a
+    // deep link already opened a specific thread above.
+    if (!currentDmRoom) {
+      switchView("dm");
+    }
+  } catch (e) {
+    if (!isLoggingOut) window.location.replace("/login.html");
+  }
+}
+
+// Supports deep-linking into a specific DM thread, e.g. when arriving from
+// a profile page's "Message" button: /dashboard.html?dm=<username>
+async function maybeOpenDmFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  const target = params.get("dm");
+  if (!target || target === user.username) return;
+
+  try {
+    const res = await fetch(`/api/dm/room/${encodeURIComponent(target)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    switchView("dm");
+    await loadDmThreads();
+    openDmThread(data.user.username, data.user.name, data.user.avatar);
+
+    // Clean the URL so refreshing doesn't keep forcing this thread open.
+    window.history.replaceState({}, "", "/dashboard.html");
+  } catch (e) {
+    // ignore — deep link is a convenience, not critical
+  }
+}
+
+// Init calls moved to end of file after all variable declarations
+
+document.addEventListener("safari:langchange", () => {
+  // re-render dynamic strings that data-i18n alone doesn't cover
+  if (user.name) {
+    document.getElementById("userbox").innerHTML = `
+      ${avatarHtml(user.name, user.avatar, "userbox-avatar")}
+      <span>${escapeHtml(user.name)} | ${escapeHtml(user.team || SafariPrefs.t("noTeam"))}</span>
+    `;
+    document.getElementById("infoCard").innerHTML = `
+      <b>${escapeHtml(user.name)}</b><br>
+      ${SafariPrefs.t("team")}: ${escapeHtml(user.team || SafariPrefs.t("noTeam"))}<br>
+      ${SafariPrefs.t("role")}: ${escapeHtml(user.role)}
+    `;
+  }
+  if (currentView === "dm") {
+    renderDmThreadsList(document.getElementById("dmSearchInput").value.trim());
+
+  }
+});
+
+function escapeHtml(str) {
+  return String(str ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+/* ====================== AVATAR UPLOAD ====================== */
+
+const avatarInput = document.getElementById("avatarInput");
+document.getElementById("profileAvatarEditBtn").addEventListener("click", () => avatarInput.click());
+
+avatarInput.addEventListener("change", async () => {
+  const file = avatarInput.files[0];
+  if (!file) return;
+
+  try {
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    const res = await fetch("/api/avatar", { method: "POST", body: formData });
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || SafariPrefs.t("uploadFailed"));
+      return;
+    }
+
+    user.avatar = data.avatar;
+    document.querySelector(".profile-avatar").outerHTML = avatarHtml(user.name, user.avatar, "profile-avatar")
+      .replace('class="profile-avatar"', 'class="profile-avatar" id="profileAvatar"');
+    document.getElementById("userbox").innerHTML = `
+      ${avatarHtml(user.name, user.avatar, "userbox-avatar")}
+      <span>${escapeHtml(user.name)} | ${escapeHtml(user.team || SafariPrefs.t("noTeam"))}</span>
+    `;
+  } catch (e) {
+    alert(SafariPrefs.t("uploadFailed"));
+  } finally {
+    avatarInput.value = "";
+  }
+});
+
+/* ====================== CHAT ====================== */
+
+function formatBubbleTime(timestamp) {
+  const d = timestamp ? new Date(timestamp) : new Date();
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function renderMessage(m, container) {
+  const isOwn = m.user === user.name;
+  const isAdmin = user.role === 'admin' || user.role === 'hos';
+  const canDelete = m.id && (isOwn || isAdmin);
+
+  const prev = container.lastElementChild;
+  const isGrouped = prev && prev.classList.contains("bubble-row") &&
+    prev.getAttribute("data-user") === m.user;
+
+  const row = document.createElement("div");
+  row.className = `bubble-row ${isOwn ? "own" : "other"}${isGrouped ? " grouped" : ""}`;
+  row.setAttribute("data-user", m.user);
+  if (m.id) row.setAttribute("data-msg-id", m.id);
+
+  const avatarHtmlStr = isGrouped
+    ? `<div class="bubble-avatar spacer"></div>`
+    : avatarHtml(m.user, m.userAvatar, "bubble-avatar");
+
+  const col = document.createElement("div");
+  col.className = "bubble-col";
+
+  let authorHtml = "";
+  if (!isOwn && !isGrouped) {
+    const safeName = escapeHtml(m.user).replace(/'/g, "\'");
+    authorHtml = `<div class="bubble-author" style="cursor:pointer" onclick="openProfileByName('${safeName}')">` + escapeHtml(m.user) + `</div>`;
+  }
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.style.position = "relative";
+
+  let innerHtml = "";
+  if (m.text) innerHtml += `<span class="bubble-text">${escapeHtml(m.text)}</span>`;
+
+  if (m.attachment && m.attachment.url) {
+    if ((m.attachment.mime || "").startsWith("image/")) {
+      innerHtml += `<img class="bubble-img" src="${m.attachment.url}" alt="${escapeHtml(m.attachment.name)}" onclick="window.open('${m.attachment.url}', '_blank')">`;
+    } else if ((m.attachment.mime || "").startsWith("audio/") || /\.(webm|ogg|mp4|m4a|wav)$/i.test(m.attachment.url)) {
+      innerHtml += `<div class="bubble-audio"><audio controls src="${m.attachment.url}" preload="metadata"></audio></div>`;
+    } else {
+      innerHtml += `<a href="${m.attachment.url}" target="_blank" class="bubble-file">📄 ${escapeHtml(m.attachment.name)}</a>`;
+    }
+  }
+
+  innerHtml += `<span class="bubble-meta">${formatBubbleTime(m.timestamp)}</span>`;
+  bubble.innerHTML = innerHtml;
+
+  if (canDelete) {
+    bubble.classList.add("ctx-enabled");
+    bubble.setAttribute("data-can-delete", "1");
+    bubble.setAttribute("data-is-own", isOwn ? "1" : "0");
+    bubble.setAttribute("data-is-admin", isAdmin ? "1" : "0");
+  }
+
+  col.innerHTML = authorHtml;
+  col.appendChild(bubble);
+
+  row.innerHTML = avatarHtmlStr;
+  if (!isOwn && !isGrouped) {
+    const av = row.querySelector(".bubble-avatar");
+    if (av) {
+      av.style.cursor = "pointer";
+      av.addEventListener("click", () => openProfileByName(m.user));
+    }
+  }
+  row.appendChild(col);
+  container.appendChild(row);
+}
+
+/* ===== Telegram-style message context menu =====
+   Triggers: long-press (touch), right-click (desktop), or a quick tap-and-hold
+   with the mouse. Works for any bubble with data-can-delete="1", whether it
+   was just rendered live or came from chat history (event delegation on the
+   scroll container, not per-bubble listeners, so old messages work too). */
+
+let msgCtx = null; // { overlay, cloneWrap, menu, bubble, msgId }
+
+function buildMsgCtxMenu(isOwn, isAdmin) {
+  const menu = document.createElement("div");
+  menu.className = "msg-ctx-menu";
+
+  const deleteLabel = (isAdmin && !isOwn)
+    ? SafariPrefs.t("msgDeleteAdmin")
+    : SafariPrefs.t("msgDeleteOwn");
+
+  const deleteItem = document.createElement("button");
+  deleteItem.className = "msg-ctx-item danger";
+  deleteItem.innerHTML = `<span class="msg-ctx-icon">🗑</span><span>${escapeHtml(deleteLabel)}</span>`;
+  deleteItem.onclick = (e) => {
+    e.stopPropagation();
+    const msgId = msgCtx ? msgCtx.msgId : null;
+    closeMsgContextMenu();
+    if (msgId) deleteMessage(msgId, currentDmRoom);
+  };
+  menu.appendChild(deleteItem);
+  return menu;
+}
+
+function openMsgContextMenu(bubble, clientX, clientY) {
+  if (bubble.getAttribute("data-can-delete") !== "1") return;
+  closeMsgContextMenu();
+
+  const msgId = bubble.closest("[data-msg-id]")?.getAttribute("data-msg-id");
+  if (!msgId) return;
+  const isOwn = bubble.getAttribute("data-is-own") === "1";
+  const isAdmin = bubble.getAttribute("data-is-admin") === "1";
+
+  const rect = bubble.getBoundingClientRect();
+
+  // Dimmed backdrop
+  const overlay = document.createElement("div");
+  overlay.className = "msg-ctx-overlay";
+  document.body.appendChild(overlay);
+
+  // Floating, slightly-enlarged clone of the bubble sitting above the dim layer
+  const cloneWrap = document.createElement("div");
+  cloneWrap.className = "msg-ctx-clone-wrap";
+  cloneWrap.style.left = rect.left + "px";
+  cloneWrap.style.top = rect.top + "px";
+  cloneWrap.style.width = rect.width + "px";
+  const clone = bubble.cloneNode(true);
+  clone.classList.remove("ctx-enabled");
+  cloneWrap.appendChild(clone);
+  document.body.appendChild(cloneWrap);
+
+  // Menu, positioned near the press point but kept on-screen
+  const menu = buildMsgCtxMenu(isOwn, isAdmin);
+  document.body.appendChild(menu);
+  const menuW = 210, menuH = 56;
+  let menuLeft = Math.min(Math.max(8, rect.right - menuW), window.innerWidth - menuW - 8);
+  let menuTop = rect.bottom + 10;
+  let flip = false;
+  if (menuTop + menuH > window.innerHeight - 8) {
+    menuTop = rect.top - menuH - 10;
+    flip = true;
+  }
+  menu.style.left = menuLeft + "px";
+  menu.style.top = menuTop + "px";
+  if (flip) menu.classList.add("menu-flip");
+
+  bubble.style.visibility = "hidden";
+
+  requestAnimationFrame(() => {
+    overlay.classList.add("show");
+    cloneWrap.classList.add("show");
+    menu.classList.add("show");
+  });
+
+  msgCtx = { overlay, cloneWrap, menu, bubble, msgId };
+
+  overlay.addEventListener("click", closeMsgContextMenu);
+}
+
+function closeMsgContextMenu() {
+  if (!msgCtx) return;
+  const { overlay, cloneWrap, menu, bubble } = msgCtx;
+  bubble.style.visibility = "";
+  overlay.classList.remove("show");
+  cloneWrap.classList.remove("show");
+  menu.classList.remove("show");
+  setTimeout(() => {
+    overlay.remove();
+    cloneWrap.remove();
+    menu.remove();
+  }, 220);
+  msgCtx = null;
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && msgCtx) closeMsgContextMenu();
+});
+
+// ---- Trigger wiring: long-press (touch) + right-click (desktop) ----
+// Delegated on the messages scroll box so it covers every bubble currently
+// in the DOM, including ones rendered from history before this code ran.
+(function setupMsgCtxTriggers() {
+  const LONG_PRESS_MS = 420;
+  const MOVE_CANCEL_PX = 8;
+  let pressTimer = null;
+  let pressStart = null;
+  let pressBubble = null;
+
+  function clearPress() {
+    if (pressTimer) clearTimeout(pressTimer);
+    pressTimer = null;
+    if (pressBubble) pressBubble.classList.remove("long-pressing");
+    pressBubble = null;
+    pressStart = null;
+  }
+
+  function getMessagesBox() {
+    return document.getElementById("dmMessages");
+  }
+
+  document.addEventListener("pointerdown", (e) => {
+    const box = getMessagesBox();
+    if (!box || !box.contains(e.target)) return;
+    if (e.button !== 0 && e.pointerType !== "touch") return; // only left-click drives long-press on mouse
+    const bubble = e.target.closest(".bubble");
+    if (!bubble || bubble.getAttribute("data-can-delete") !== "1") return;
+
+    pressBubble = bubble;
+    pressStart = { x: e.clientX, y: e.clientY };
+    bubble.classList.add("long-pressing");
+    pressTimer = setTimeout(() => {
+      if (pressBubble === bubble) {
+        bubble.classList.remove("long-pressing");
+        openMsgContextMenu(bubble, e.clientX, e.clientY);
+      }
+      clearPress();
+    }, LONG_PRESS_MS);
+  });
+
+  document.addEventListener("pointermove", (e) => {
+    if (!pressTimer || !pressStart) return;
+    const dx = Math.abs(e.clientX - pressStart.x);
+    const dy = Math.abs(e.clientY - pressStart.y);
+    if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) clearPress();
+  });
+
+  document.addEventListener("pointerup", clearPress);
+  document.addEventListener("pointercancel", clearPress);
+
+  // Right-click on desktop opens it instantly, no hold needed.
+  document.addEventListener("contextmenu", (e) => {
+    const box = getMessagesBox();
+    if (!box || !box.contains(e.target)) return;
+    const bubble = e.target.closest(".bubble");
+    if (!bubble || bubble.getAttribute("data-can-delete") !== "1") return;
+    e.preventDefault();
+    clearPress();
+    openMsgContextMenu(bubble, e.clientX, e.clientY);
+  });
+})();
+
+async function deleteMessage(msgId, room) {
+  if (!confirm(SafariPrefs.t("msgDeleteConfirm"))) return;
+  try {
+    const res = await fetch("/api/chat/message", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ room, msgId })
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      showStatusLimitError(d.error || "Не удалось удалить сообщение");
+    }
+  } catch(e) { console.error("Delete msg failed", e); }
+}
+
+socket.on("msgDeleted", ({ room, msgId }) => {
+  if (room === currentDmRoom) {
+    const el = document.querySelector(`[data-msg-id="${msgId}"]`);
+    if (el) {
+      if (msgCtx && el.contains(msgCtx.bubble)) closeMsgContextMenu();
+      el.remove();
+    }
+  }
+});
+
+
+// All chats — Global, Team, and 1-on-1 DMs — now render into the same
+// #dmMessages pane. currentDmRoom holds whichever room is currently open.
+socket.on("history", (msgs) => {
+  if (lastHistoryRoom !== currentDmRoom) return;
+  closeMsgContextMenu();
+  const box = document.getElementById("dmMessages");
+  box.innerHTML = "";
+  msgs.forEach(m => renderMessage(m, box));
+  box.scrollTop = box.scrollHeight;
+});
+
+socket.on("msg", (msg) => {
+  const room = msg.room;
+  const isPersonal = room && room.startsWith("dm:");
+
+  if (room === currentDmRoom) {
+    const box = document.getElementById("dmMessages");
+    renderMessage(msg, box);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  if (msg.user !== user.name) {
+    notifyNewMessage(msg);
+    if (room !== currentDmRoom || currentView !== "dm") {
+      markDmThreadUnread(room);
+    }
+  }
+
+  if (isPersonal) {
+    refreshDmThreadPreview(room, msg);
+  } else {
+    refreshPinnedRoomPreview(room, msg);
+  }
+});
+
+socket.on("connect", () => {
+  // Re-join whichever room is currently open (survives reconnects).
+  if (currentDmRoom) {
+    socket.emit("join", currentDmRoom);
+    socket.emit("getHistory", currentDmRoom);
+  }
+});
+
+let lastHistoryRoom = null;
+
+function joinRoom(room) {
+  currentDmRoom = room;
+  lastHistoryRoom = room;
+  socket.emit("join", room);
+  socket.emit("getHistory", room);
+}
+
+/* ====================== UNIFIED CHATS LIST ====================== */
+// Pinned rooms (Global + Team) always sit at the top of the chat list,
+// exactly like "saved"/system chats sit at the top in Telegram. Personal
+// 1-on-1 conversations follow below, sorted by most recent activity.
+
+let dmThreadsCache = [];
+let dmDirectoryCache = [];
+let currentDmRoom = null;
+let currentDmUser = null;
+const dmUnread = new Set();
+
+// Last-message previews for the pinned rooms, keyed by room id ("GLOBAL" or team name).
+const pinnedRoomPreviews = {};
+
+function dmAvatarHtml(name, avatarUrl, sizeClass) {
+  if (avatarUrl) {
+    return `<img class="${sizeClass}" src="${avatarUrl}" alt="${escapeHtml(name)}">`;
+  }
+  const initial = (name || "?").trim().charAt(0).toUpperCase() || "?";
+  return `<div class="${sizeClass}">${escapeHtml(initial)}</div>`;
+}
+
+function pinnedRoomIconHtml(kind) {
+  const emoji = kind === "global" ? "🌍" : kind === "lunch" ? "🍔" : "💬";
+  return `<div class="dm-thread-avatar pinned-room-avatar">${emoji}</div>`;
+}
+
+function updateDmBadge() {
+  const badge = document.getElementById("dmBadge");
+  if (dmUnread.size > 0) {
+    badge.innerText = dmUnread.size > 9 ? "9+" : String(dmUnread.size);
+    badge.classList.add("show");
+  } else {
+    badge.classList.remove("show");
+  }
+}
+
+function markDmThreadUnread(room) {
+  dmUnread.add(room);
+  updateDmBadge();
+  renderDmThreadsList(document.getElementById("dmSearchInput").value.trim());
+}
+
+function refreshDmThreadPreview(room, msg) {
+  const other = dmThreadsCache.find(t => t.room === room);
+  const preview = { text: msg.text || "", attachment: !!msg.attachment, timestamp: msg.timestamp };
+  if (other) {
+    other.lastMessage = preview;
+  } else {
+    // New thread we hadn't seen yet (someone messaged us for the first time).
+    loadDmThreads();
+    return;
+  }
+  dmThreadsCache.sort((a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0));
+  renderDmThreadsList(document.getElementById("dmSearchInput").value.trim());
+}
+
+function refreshPinnedRoomPreview(room, msg) {
+  if (room !== "GLOBAL" && room !== user.team) return;
+  pinnedRoomPreviews[room] = {
+    text: msg.text || "",
+    attachment: !!msg.attachment,
+    user: msg.user,
+    timestamp: msg.timestamp
+  };
+  renderDmThreadsList(document.getElementById("dmSearchInput").value.trim());
+}
+
+async function loadDmThreads() {
+  try {
+    const res = await fetch("/api/dm/conversations");
+    if (!res.ok) throw new Error("failed");
+    const list = await res.json();
+    dmThreadsCache = list.map(t => ({ ...t, room: dmRoomIdFor(t.username) }));
+  } catch (e) {
+    dmThreadsCache = [];
+  }
+
+  try {
+    const dres = await fetch("/api/dm/directory");
+    dmDirectoryCache = dres.ok ? await dres.json() : [];
+  } catch (e) {
+    dmDirectoryCache = [];
+  }
+
+  renderDmThreadsList("");
+}
+
+// Mirrors the server's dmRoomId() sorting logic so the client can recognize
+// which thread an incoming socket message belongs to.
+function dmRoomIdFor(otherUsername) {
+  const pair = [user.username, otherUsername].sort();
+  return `dm:${pair[0]}:${pair[1]}`;
+}
+
+function pinnedRoomPreviewText(room) {
+  const p = pinnedRoomPreviews[room];
+  if (!p) return SafariPrefs.t("dmNoMessagesYet");
+  const body = p.text || (p.attachment ? "📎 " + SafariPrefs.t("dmAttachment") : "");
+  return p.user ? `${p.user}: ${body}` : body;
+}
+
+function renderDmThreadsList(filterText) {
+  const box = document.getElementById("dmThreads");
+  const q = (filterText || "").trim().toLowerCase();
+
+  let html = "";
+
+  // ---- Pinned rooms: Global chat always, Team chat only if user has a team ----
+  const pinnedRooms = [];
+  pinnedRooms.push({
+    room: "GLOBAL",
+    kind: "global",
+    name: SafariPrefs.t("globalChat")
+  });
+  if (user.team) {
+    pinnedRooms.push({
+      room: user.team,
+      kind: "team",
+      name: user.team
+    });
+  }
+  pinnedRooms.push({
+    room: "LUNCH_BREAK",
+    kind: "lunch",
+    name: SafariPrefs.t("lunchBreakChat")
+  });
+
+  const filteredPinned = pinnedRooms.filter(r => !q || r.name.toLowerCase().includes(q));
+
+  if (filteredPinned.length) {
+    html += filteredPinned.map(r => {
+      const isActive = r.room === currentDmRoom;
+      const isUnread = dmUnread.has(r.room);
+      return `
+        <div class="dm-thread-item pinned-room ${isActive ? "active" : ""}" onclick="openPinnedRoom('${escapeHtml(r.room).replace(/'/g, "\\'")}', '${r.kind}')">
+          ${pinnedRoomIconHtml(r.kind)}
+          <div class="dm-thread-body">
+            <div class="dm-thread-name">📌 ${escapeHtml(r.name)}${isUnread ? " 🔵" : ""}</div>
+            <div class="dm-thread-preview">${escapeHtml(pinnedRoomPreviewText(r.room))}</div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // ---- Personal 1-on-1 conversations ----
+  const filteredThreads = dmThreadsCache.filter(t => !q || t.name.toLowerCase().includes(q));
+
+  if (filteredThreads.length) {
+    if (filteredPinned.length) {
+      html += `<div class="dm-section-label">${SafariPrefs.t("dmPersonalSection")}</div>`;
+    }
+    html += filteredThreads.map(t => {
+      const isActive = t.room === currentDmRoom;
+      const isUnread = dmUnread.has(t.room);
+      const previewText = t.lastMessage
+        ? (t.lastMessage.text || (t.lastMessage.attachment ? "📎 " + SafariPrefs.t("dmAttachment") : ""))
+        : SafariPrefs.t("dmNoMessagesYet");
+      return `
+        <div class="dm-thread-item ${isActive ? "active" : ""}" onclick="openDmThread('${escapeHtml(t.username)}', '${escapeHtml(t.name)}', ${JSON.stringify(t.avatar)})">
+          ${dmAvatarHtml(t.name, t.avatar, "dm-thread-avatar")}
+          <div class="dm-thread-body">
+            <div class="dm-thread-name">${escapeHtml(t.name)}${isUnread ? " 🔵" : ""}</div>
+            <div class="dm-thread-preview">${escapeHtml(previewText)}</div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // Directory of everyone else, for starting a new conversation. Only shown
+  // while actively searching — by default the list only shows threads that
+  // already have messages, but anyone can still be found via search.
+  const existingUsernames = new Set(dmThreadsCache.map(t => t.username));
+  const directoryMatches = q
+    ? dmDirectoryCache.filter(u => !existingUsernames.has(u.username) && u.name.toLowerCase().includes(q))
+    : [];
+
+  if (directoryMatches.length) {
+    html += `<div class="dm-section-label">${SafariPrefs.t("dmStartNew")}</div>`;
+    html += directoryMatches.map(u => `
+      <div class="dm-directory-item" onclick="openDmThread('${escapeHtml(u.username)}', '${escapeHtml(u.name)}', ${JSON.stringify(u.avatar)})">
+        ${dmAvatarHtml(u.name, u.avatar, "dm-directory-avatar")}
+        <div class="dm-thread-body">
+          <div class="dm-thread-name">${escapeHtml(u.name)}</div>
+          <div class="dm-thread-preview">${escapeHtml(u.team || SafariPrefs.t("noTeam"))}</div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  if (!html) {
+    html = `<div class="dm-empty">${SafariPrefs.t(q ? "dmNoResults" : "dmSelectPrompt")}</div>`;
+  }
+
+  box.innerHTML = html;
+}
+
+document.getElementById("dmSearchInput").addEventListener("input", (e) => {
+  renderDmThreadsList(e.target.value);
+});
+
+// Opens a pinned room (Global, Team, or Lunch+Break)
+// inside the same chat pane used for DMs.
+function openPinnedRoom(room, kind) {
+  if (kind === "team" && (!user.team || room !== user.team)) return;
+  if (kind === "global" && room !== "GLOBAL") return;
+  if (kind === "lunch" && room !== "LUNCH_BREAK") return;
+
+  currentDmRoom = room;
+  currentDmUser = null;
+  lastHistoryRoom = room;
+
+  dmUnread.delete(room);
+  updateDmBadge();
+
+  document.getElementById("dmPlaceholder").style.display = "none";
+  const activeBox = document.getElementById("dmChatActive");
+  activeBox.style.display = "flex";
+
+  let label;
+  if (kind === "global") label = SafariPrefs.t("globalChat");
+  else if (kind === "lunch") label = SafariPrefs.t("lunchBreakChat");
+  else label = SafariPrefs.t("teamChat") + " — " + room;
+
+  document.getElementById("dmChatHeader").innerHTML = `
+    ${pinnedRoomIconHtml(kind)}
+    <div class="dm-thread-name">📌 ${escapeHtml(label)}</div>
+  `;
+  document.getElementById("dmChatHeader").onclick = null;
+  document.getElementById("dmChatHeader").style.cursor = "default";
+
+  document.getElementById("dmInputBar").style.display = "flex";
+  document.getElementById("dmReadonlyBanner").style.display = "none";
+
+  document.getElementById("dmMessages").innerHTML = "";
+
+  joinRoom(room);
+
+  renderDmThreadsList(document.getElementById("dmSearchInput").value.trim());
+}
+
+function openDmThread(username, name, avatar) {
+  currentDmRoom = dmRoomIdFor(username);
+  currentDmUser = { username, name, avatar };
+  lastHistoryRoom = currentDmRoom;
+
+  dmUnread.delete(currentDmRoom);
+  updateDmBadge();
+
+  document.getElementById("dmPlaceholder").style.display = "none";
+  const activeBox = document.getElementById("dmChatActive");
+  activeBox.style.display = "flex";
+
+  document.getElementById("dmChatHeader").innerHTML = `
+    ${dmAvatarHtml(name, avatar, "dm-thread-avatar")}
+    <div class="dm-thread-name">${escapeHtml(name)}</div>
+  `;
+  document.getElementById("dmChatHeader").style.cursor = "pointer";
+  document.getElementById("dmChatHeader").onclick = () => openProfileModal(username);
+
+  document.getElementById("dmInputBar").style.display = "flex";
+  document.getElementById("dmReadonlyBanner").style.display = "none";
+
+  document.getElementById("dmMessages").innerHTML = "";
+
+  socket.emit("join", currentDmRoom);
+  socket.emit("getHistory", currentDmRoom);
+
+  renderDmThreadsList(document.getElementById("dmSearchInput").value.trim());
+}
+
+attachEmojiPicker(document.getElementById("dmEmojiBtn"), document.getElementById("dmMsgInput"));
+
+document.getElementById("dmMsgInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    if (!e.target.value.trim()) return;
+    if (!currentDmRoom || !user.name) return;
+
+    socket.emit("msg", {
+      room: currentDmRoom,
+      text: e.target.value,
+      user: user.name
+    });
+
+    e.target.value = "";
+  }
+});
+
+const dmAttachBtn = document.getElementById("dmAttachBtn");
+const dmFileInput = document.getElementById("dmFileInput");
+
+dmAttachBtn.addEventListener("click", () => dmFileInput.click());
+
+dmFileInput.addEventListener("change", async () => {
+  const file = dmFileInput.files[0];
+  if (!file || !currentDmRoom) return;
+
+  dmAttachBtn.disabled = true;
+  dmAttachBtn.innerText = "⏳";
+
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("/api/upload", { method: "POST", body: formData });
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || SafariPrefs.t("uploadFailed"));
+      return;
+    }
+
+    socket.emit("msg", {
+      room: currentDmRoom,
+      text: "",
+      user: user.name,
+      attachment: data
+    });
+  } catch (e) {
+    alert(SafariPrefs.t("uploadFailed"));
+  } finally {
+    dmFileInput.value = "";
+    dmAttachBtn.disabled = false;
+    dmAttachBtn.innerText = "📎";
+  }
+});
+
+/* ====================== VOICE MESSAGES ====================== */
+
+function makeVoiceRecorder(btnId, getRoomFn) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+
+  let mediaRecorder = null;
+  let chunks = [];
+  let timerInterval = null;
+  let seconds = 0;
+
+  function startTimer() {
+    seconds = 0;
+    btn.textContent = "⏹ 0:00";
+    timerInterval = setInterval(() => {
+      seconds++;
+      const m = Math.floor(seconds / 60);
+      const s = String(seconds % 60).padStart(2, "0");
+      btn.textContent = `⏹ ${m}:${s}`;
+    }, 1000);
+  }
+
+  function stopTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    btn.textContent = "🎤";
+  }
+
+  btn.addEventListener("click", async () => {
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      // Stop recording
+      mediaRecorder.stop();
+      return;
+    }
+
+    // Start recording
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")
+          ? "audio/ogg;codecs=opus"
+          : "audio/webm";
+
+      mediaRecorder = new MediaRecorder(stream, { mimeType });
+      chunks = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stopTimer();
+        btn.classList.remove("recording");
+        stream.getTracks().forEach(t => t.stop());
+
+        const ext = mimeType.includes("ogg") ? "ogg" : "webm";
+        const blob = new Blob(chunks, { type: mimeType });
+        const file = new File([blob], `voice-${Date.now()}.${ext}`, { type: mimeType });
+
+        const room = getRoomFn();
+        if (!room || !user.name) return;
+
+        btn.disabled = true;
+        btn.textContent = "⏳";
+
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+          const res = await fetch("/api/upload", { method: "POST", body: formData });
+          const data = await res.json();
+          if (!res.ok) { alert(data.error || "Upload failed"); return; }
+          socket.emit("msg", { room, text: "", user: user.name, attachment: data });
+        } catch (err) {
+          alert("Failed to send voice message");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "🎤";
+        }
+      };
+
+      mediaRecorder.start();
+      btn.classList.add("recording");
+      startTimer();
+    } catch (err) {
+      alert("Microphone access denied. Please allow microphone in browser settings.");
+    }
+  });
+}
+
+makeVoiceRecorder("dmVoiceBtn", () => currentDmRoom);
+
+/* ====================== PROFILE BY NAME ====================== */
+
+function openProfileByName(displayName) {
+  // Search in dmDirectoryCache (has all users)
+  const found = dmDirectoryCache.find(u => u.name === displayName);
+  if (found) { openProfileModal(found.username); return; }
+  // Fallback: search usersDirectory (tickets directory)
+  const fromTickets = Object.values(usersDirectory).find(u => u.name === displayName);
+  if (fromTickets) { openProfileModal(fromTickets.username); return; }
+  // Last resort: try displayName as username
+  openProfileModal(displayName);
+}
+
+/* ====================== NOTIFICATIONS ====================== */
+
+const originalTitle = document.title;
+let unreadCount = 0;
+
+if ("Notification" in window && Notification.permission === "default") {
+  Notification.requestPermission();
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    unreadCount = 0;
+    document.title = originalTitle;
+  }
+});
+
+function notifyNewMessage(msg) {
+  showToast(msg);
+
+  if (document.hidden) {
+    unreadCount++;
+    document.title = `(${unreadCount}) ${originalTitle}`;
+
+    if ("Notification" in window && Notification.permission === "granted") {
+      const body = msg.text || (msg.attachment ? "📎 " + msg.attachment.name : "New message");
+      new Notification(`${msg.user} — ${msg.room || ""}`, { body });
+    }
+  }
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const toast = document.getElementById("toast");
+  const body = msg.text || (msg.attachment ? "📎 " + msg.attachment.name : "");
+
+  toast.innerHTML = `<div class="toast-author">${escapeHtml(msg.user)}</div><div>${escapeHtml(body)}</div>`;
+  toast.classList.add("show");
+
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), 3500);
+}
+
+/* ====================== VIEW SWITCHING (no reload) ====================== */
+
+function switchView(view) {
+  currentView = view;
+
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.getElementById("userbox").classList.remove("active");
+
+  const tabEl = document.querySelector(`.tab[data-view="${view}"]`);
+  if (tabEl) {
+    tabEl.classList.add("active");
+  } else if (view === "profile") {
+    document.getElementById("userbox").classList.add("active");
+  }
+
+  document.getElementById("dmView").style.display = "none";
+  document.getElementById("crmView").style.display = "none";
+  document.getElementById("ticketsView").style.display = "none";
+  document.getElementById("profileView").style.display = "none";
+  document.getElementById("rightPanel").style.display = "block";
+
+  if (view === "dm") {
+    document.getElementById("title").innerText = SafariPrefs.t("chatsShort");
+    document.getElementById("dmView").style.display = "flex";
+    document.getElementById("rightPanel").style.display = "none";
+    loadDmThreads();
+    // Default to the Global room on first entry into Chats, unless a thread
+    // is already open (e.g. coming back from another tab).
+    if (!currentDmRoom) {
+      openPinnedRoom("GLOBAL", "global");
+    }
+  } else if (view === "crm") {
+    document.getElementById("title").innerText = SafariPrefs.t("crm");
+    document.getElementById("crmView").style.display = "block";
+    document.getElementById("rightPanel").style.display = "none";
+    loadCRM();
+  } else if (view === "tickets") {
+    document.getElementById("title").innerText = SafariPrefs.t("tickets");
+    document.getElementById("ticketsView").style.display = "block";
+    document.getElementById("rightPanel").style.display = "none";
+    loadTickets();
+  } else if (view === "profile") {
+    document.getElementById("title").innerText = SafariPrefs.t("myProfile");
+    document.getElementById("profileView").style.display = "block";
+    document.getElementById("rightPanel").style.display = "none";
+  }
+}
+
+/* ====================== CRM (org chart) ====================== */
+
+const CRM_FLAGS = { ES: "🇪🇸", FR: "🇫🇷", CA: "🇨🇦" };
+function crmFlagFor(dept) {
+  return CRM_FLAGS[(dept || "").toUpperCase()] || "🏳️";
+}
+
+function crmGoToProfile(username) {
+  if (!username) return;
+  openProfileModal(username);
+}
+
+/* ====================== Profile quick-view modal ====================== */
+
+const PROFILE_MODAL_ROLE_COLORS = {
+  admin:        "linear-gradient(135deg,#ff5f6d,#ffc371)",
+  hos:          "linear-gradient(135deg,#8a5aff,#5a5aff)",
+  hor:          "linear-gradient(135deg,#6fe09a,#1f8a4c)",
+  tl_sales:     "linear-gradient(135deg,#36d1c4,#1e90ff)",
+  tl_retention: "linear-gradient(135deg,#7fe6a8,#2fa861)",
+  sales:        "linear-gradient(135deg,#5a5aff,#8a5aff)",
+  retention:    "linear-gradient(135deg,#6fe09a,#1f8a4c)"
+};
+
+let profileModalCloseTimer = null;
+
+function openProfileModal(username) {
+  const overlay = document.getElementById("profileModalOverlay");
+  const body = document.getElementById("profileModalBody");
+
+  clearTimeout(profileModalCloseTimer);
+  overlay.classList.remove("closing");
+  body.innerHTML = `<div class="profile-modal-loading" data-i18n="loading">${SafariPrefs.t("loading")}</div>`;
+
+  // Two-step show so the CSS transition (opacity/scale) actually animates
+  // in, instead of snapping straight to the "shown" state.
+  overlay.classList.add("show");
+  requestAnimationFrame(() => {
+    overlay.classList.add("show");
+  });
+
+  document.addEventListener("keydown", profileModalEscHandler);
+
+  fetch(`/api/users/${encodeURIComponent(username)}/profile-card`)
+    .then(res => {
+      if (!res.ok) throw new Error("Failed to load profile");
+      return res.json();
+    })
+    .then(renderProfileModal)
+    .catch(() => {
+      body.innerHTML = `<div class="profile-modal-loading" data-i18n="failedToLoad">${SafariPrefs.t("failedToLoad")}</div>`;
+    });
+}
+
+function profileModalEscHandler(e) {
+  if (e.key === "Escape") closeProfileModal();
+}
+
+function closeProfileModal() {
+  const overlay = document.getElementById("profileModalOverlay");
+  overlay.classList.add("closing");
+  document.removeEventListener("keydown", profileModalEscHandler);
+
+  clearTimeout(profileModalCloseTimer);
+  profileModalCloseTimer = setTimeout(() => {
+    overlay.classList.remove("show", "closing");
+  }, 200);
+}
+
+function profileModalAvatarHtml(p) {
+  if (p.avatar) {
+    return `<img class="profile-modal-avatar" src="${p.avatar}" alt="${escapeHtml(p.name)}">`;
+  }
+  const initial = (p.name || "?").trim().charAt(0).toUpperCase() || "?";
+  return `<div class="profile-modal-avatar">${escapeHtml(initial)}</div>`;
+}
+
+function renderProfileModal(p) {
+  const body = document.getElementById("profileModalBody");
+  const roleBg = PROFILE_MODAL_ROLE_COLORS[p.role] || "linear-gradient(135deg, var(--accent), #8a5aff)";
+  const isSelf = user && user.username === p.username;
+
+  let metaRows = "";
+  if (p.department) {
+    metaRows += `<div class="profile-modal-meta-row"><span class="k" data-i18n="department">Department</span><span class="v">${escapeHtml(p.department)}</span></div>`;
+  }
+  if (p.manager) {
+    metaRows += `<div class="profile-modal-meta-row"><span class="k" data-i18n="manager">Manager</span><span class="v">${escapeHtml(p.manager)}</span></div>`;
+  }
+
+  const actions = isSelf
+    ? `<button class="btn-primary" onclick="closeProfileModal(); window.open('/u/${encodeURIComponent(p.username)}', '_blank')" data-i18n="openProfilePage">Open my profile page</button>`
+    : `
+      <button class="btn-secondary" onclick="closeProfileModal(); window.location.href='/dashboard.html?dm=${encodeURIComponent(p.username)}'" data-i18n="startChat">Message</button>
+      <button class="btn-primary" onclick="closeProfileModal(); window.open('/u/${encodeURIComponent(p.username)}', '_blank')" data-i18n="crmViewProfile">View profile</button>
+    `;
+
+  // build meta rows
+  let metaHtml = "";
+  if (p.team) {
+    metaHtml += `<div class="profile-modal-meta-row">
+      <span class="k" data-i18n="team">Team</span>
+      <span class="v"><span class="profile-modal-team-chip"><span class="dot"></span>${escapeHtml(p.team.replace(/_/g," "))}</span></span>
+    </div>`;
+  }
+  if (p.department) {
+    metaHtml += `<div class="profile-modal-meta-row">
+      <span class="k" data-i18n="department">Department</span>
+      <span class="v">${escapeHtml(p.department)}</span>
+    </div>`;
+  }
+  if (p.manager) {
+    metaHtml += `<div class="profile-modal-meta-row">
+      <span class="k" data-i18n="manager">Manager</span>
+      <span class="v">${escapeHtml(p.manager)}</span>
+    </div>`;
+  }
+
+  const roleLabel = {
+    hos:"Head of Sales", hor:"Head of Retention",
+    tl_sales:"Team Lead · Sales", tl_retention:"Team Lead · Retention",
+    sales:"Sales Agent", retention:"Retention Agent", admin:"Admin"
+  }[p.role] || p.role;
+
+  body.innerHTML = `
+    <div class="profile-modal-avatar-wrap">${profileModalAvatarHtml(p)}</div>
+    <div class="profile-modal-name">${escapeHtml(p.name)}</div>
+    <div class="profile-modal-username">@${escapeHtml(p.username)}</div>
+    <div style="display:flex;justify-content:center;margin-bottom:16px;">
+      <span class="profile-modal-role-pill" style="background:${roleBg}">
+        <span class="dot"></span>${escapeHtml(roleLabel)}
+      </span>
+    </div>
+    ${metaHtml ? `<div class="profile-modal-meta">${metaHtml}</div>` : ""}
+    <div class="profile-modal-actions">${actions}</div>
+  `;
+
+  SafariPrefs.applyLang(SafariPrefs.getLang());
+}
+
+function crmAvatarOrInitial(person, sizeClass) {
+  if (person.avatar) {
+    return `<img class="${sizeClass}" src="${person.avatar}" alt="${escapeHtml(person.name)}">`;
+  }
+  const initial = (person.name || "?").trim().charAt(0).toUpperCase() || "?";
+  return `<div class="${sizeClass}">${escapeHtml(initial)}</div>`;
+}
+
+function crmRenderHos(hos) {
+  if (!hos) return "";
+  return `
+    <div class="crm-heads-row crm-hos-row">
+      <div class="crm-head-card sales crm-animate" style="animation-delay:.02s">
+        <div class="crm-head-icon">👑</div>
+        <div class="crm-head-people">
+          <div class="crm-head-person crm-person-target" data-name="${escapeHtml(hos.name)}" onclick="crmGoToProfile('${escapeHtml(hos.username)}')">
+            ${crmAvatarOrInitial(hos, "crm-avatar")}
+            <div>
+              <div class="crm-head-label">${SafariPrefs.t("crmHeadOfSales")}</div>
+              <div class="crm-head-name crm-name-text">${escapeHtml(hos.name)}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function crmRenderHor(horList) {
+  if (!horList || !horList.length) return "";
+  // Preserve API order (left → right): both heads render as a single
+  // unified "Head of Retention" block, sitting side by side.
+  const cards = horList.map((p, i) => `
+    <div class="crm-hor-card crm-person-target crm-animate" style="animation-delay:${0.04 + i * 0.02}s" data-name="${escapeHtml(p.name)}" onclick="crmGoToProfile('${escapeHtml(p.username)}')">
+      ${crmAvatarOrInitial(p, "crm-avatar")}
+      <div>
+        <div class="crm-hor-label">Head of Retention</div>
+        <div class="crm-hor-name crm-name-text">${escapeHtml(p.name)}</div>
+      </div>
+    </div>
+  `).join("");
+  return `<div class="crm-hor-row">${cards}</div>`;
+}
+
+// Wraps a branch's content with a centered "<X> Department" heading, used
+// to group HOS+Sales under "Sales Department" and HOR+Retention under
+// "Retention Department" without altering the cards/lines/colors inside.
+function crmRenderDepartment(kind, label, innerHtml) {
+  return `
+    <div class="crm-department ${kind} crm-animate" style="animation-delay:0s">
+      <div class="crm-department-label">
+        <span class="crm-department-line left"></span>
+        <span class="crm-department-text">${escapeHtml(label)}</span>
+        <span class="crm-department-line"></span>
+      </div>
+      ${innerHtml}
+    </div>
+  `;
+}
+
+function crmToggleTlGroup(groupEl) {
+  groupEl.classList.toggle("tl-collapsed");
+}
+
+function crmRenderPerson(person) {
+  return `
+    <div class="crm-person crm-person-target" data-name="${escapeHtml(person.name)}" onclick="crmGoToProfile('${escapeHtml(person.username)}')">
+      ${crmAvatarOrInitial(person, "crm-avatar")}
+      <div class="crm-person-name crm-name-text">${escapeHtml(person.name)}</div>
+      <span class="crm-go-profile">${SafariPrefs.t("crmViewProfile")} →</span>
+    </div>
+  `;
+}
+
+function crmRenderTlCard(lead) {
+  return `
+    <div class="crm-tl-card crm-person-target" data-name="${escapeHtml(lead.name)}" onclick="crmToggleTlGroup(this.closest('.crm-tl-group'))">
+      <div style="display:flex; align-items:center; gap:10px;">
+        ${crmAvatarOrInitial(lead, "crm-avatar")}
+        <div>
+          <div class="crm-tl-name crm-name-text">${escapeHtml(lead.name)}</div>
+          <div class="crm-tl-role">${SafariPrefs.t("crmTeamLead")}</div>
+        </div>
+        <span class="crm-go-profile" onclick="event.stopPropagation(); crmGoToProfile('${escapeHtml(lead.username)}')">${SafariPrefs.t("crmViewProfile")} →</span>
+        <span class="crm-tl-chevron">▾</span>
+      </div>
+    </div>
+  `;
+}
+
+let crmColCounter = 0;
+function crmRenderTeamColumn(t, branchKind, delay) {
+  crmColCounter++;
+  const leads = t.leads || [];
+  const members = t.members || [];
+
+  const groups = leads.map((lead) => {
+    const directReports = members.filter((m) => m.manager === lead.name);
+    return `
+      <div class="crm-tl-group">
+        ${crmRenderTlCard(lead)}
+        <div class="crm-member-list">
+          ${directReports.length
+            ? directReports.map(crmRenderPerson).join("")
+            : `<div class="crm-empty-team">${SafariPrefs.t("crmNoAgents")}</div>`}
+        </div>
+      </div>
+    `;
+  });
+
+  const leadNames = new Set(leads.map((l) => l.name));
+  const unassigned = members.filter((m) => !leadNames.has(m.manager));
+
+  const totalPeople = leads.length + members.length;
+  const teamLabel = (t.team || SafariPrefs.t("crmUnassigned")).replace(/_/g, " ");
+
+  return `
+    <div class="crm-col ${branchKind} crm-animate" style="animation-delay:${delay}s" data-col-id="col-${crmColCounter}">
+      <div class="crm-col-head" onclick="crmToggleCol(this)">
+        <span class="crm-flag">${crmFlagFor(t.department)}</span>
+        <span class="crm-col-title">${escapeHtml(teamLabel)}</span>
+        <span class="crm-col-count">${totalPeople}</span>
+        <span class="crm-chevron">▾</span>
+      </div>
+      <div class="crm-col-body">
+        <div class="crm-col-body-inner">
+          ${groups.join("") || `<div class="crm-empty-team">${SafariPrefs.t("crmNoLeads")}</div>`}
+          ${unassigned.length
+            ? `<div class="crm-tl-group">
+                <div class="crm-tl-role" style="margin-bottom:6px;">${SafariPrefs.t("crmUnassigned")}</div>
+                <div class="crm-member-list" style="margin-left:0; padding-left:0; border-left:none;">
+                  ${unassigned.map(crmRenderPerson).join("")}
+                </div>
+              </div>`
+            : ""}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function crmToggleCol(headEl) {
+  headEl.closest(".crm-col").classList.toggle("collapsed");
+}
+
+function crmRenderBranch(kind, teams, startDelay) {
+  if (!teams.length) return "";
+  const stubs = teams.map(() => `<div class="crm-stub"></div>`).join("");
+  const cols = teams.map((t, i) => crmRenderTeamColumn(t, kind, startDelay + i * 0.05)).join("");
+  return `
+    <div class="crm-branch ${kind}">
+      <div class="crm-trunk ${kind}"></div>
+      <div class="crm-bar-row">${stubs}</div>
+      <div class="crm-dept-grid">${cols}</div>
+    </div>
+  `;
+}
+
+let crmLastData = null;
+let crmViewMode = "tree"; // "tree" | "list" | "agents"
+let crmAgentSort = "alpha";
+
+function crmSetViewMode(mode) {
+  crmViewMode = mode;
+  const toggle = document.getElementById("crmViewToggle");
+  toggle.setAttribute("data-mode", mode);
+  toggle.querySelectorAll(".crm-view-toggle-opt").forEach((el) => {
+    el.classList.toggle("active", el.getAttribute("data-mode-opt") === mode);
+  });
+  const content = document.getElementById("crmContent");
+  const agentsView = document.getElementById("crmAgentsView");
+  const searchWrap = document.querySelector(".crm-search-wrap");
+
+  if (mode === "agents") {
+    content.style.display = "none";
+    agentsView.style.display = "block";
+    // search stays visible on all tabs
+    if (crmLastData) { crmRenderAgentsView(crmLastData); crmApplySearch(); }
+  } else {
+    content.style.display = "block";
+    agentsView.style.display = "none";
+    // search always visible
+    if (crmLastData) {
+      content.innerHTML = crmRenderCurrentView(crmLastData);
+      if (mode === "tree") crmWireBranchHover(content);
+      crmApplySearch();
+    }
+  }
+}
+
+// kept for backward compat if anything calls it
+function crmToggleViewMode() {
+  crmSetViewMode(crmViewMode === "tree" ? "list" : "tree");
+}
+
+function crmRenderCurrentView(data) {
+  return crmViewMode === "list" ? crmRenderListView(data) : crmRenderStructure(data);
+}
+
+/* ---- agents view ---- */
+const CRM_ROLE_LABELS = {
+  hos: "Head of Sales", hor: "Head of Retention",
+  tl_sales: "Team Lead · Sales", tl_retention: "Team Lead · Retention",
+  sales: "Sales", retention: "Retention", admin: "Admin",
+};
+const CRM_ROLE_ORDER = ["hos","hor","tl_sales","tl_retention","sales","retention","admin"];
+const CRM_DEPT_FLAGS = { ES:"🇪🇸", FR:"🇫🇷", CA:"🇨🇦", GLOBAL:"🌍" };
+const CRM_ROLE_ICONS = { hos:"👑", hor:"🛡️", tl_sales:"⭐", tl_retention:"⭐", sales:"📈", retention:"🔒", admin:"⚙️" };
+
+function crmAgentBadgeClass(role) {
+  if (role==="hos"||role==="hor") return "head";
+  if (role==="tl_sales"||role==="tl_retention") return "lead";
+  if (role==="retention") return "retention";
+  return "sales";
+}
+
+function crmBuildAgentsList(data) {
+  const list = [];
+  if (data.hos) list.push({ ...data.hos, role:"hos", team:"Global", department:"GLOBAL" });
+  (data.hor||[]).forEach(h => list.push({ ...h, role:"hor", team:"Global", department:"GLOBAL" }));
+  (data.departments||[]).forEach(dept => {
+    (dept.teams||[]).forEach(team => {
+      const kind = team.kind;
+      const teamLabel = (team.team||"Unassigned").replace(/_/g," ");
+      const deptLabel = (team.department||"").toUpperCase();
+      (team.leads||[]).forEach(p => list.push({ ...p, role: kind==="sales"?"tl_sales":"tl_retention", team:teamLabel, department:deptLabel }));
+      (team.members||[]).forEach(p => list.push({ ...p, team:teamLabel, department:deptLabel }));
+    });
+  });
+  return list;
+}
+
+const CRM_ROLE_SHORT = {
+  hos: "HoS", hor: "HoR",
+  tl_sales: "TL Sales", tl_retention: "TL Ret.",
+  sales: "Sales", retention: "Retention", admin: "Admin",
+};
+
+function crmAgentRowHtml(agent, sort) {
+  const avatar = crmAvatarOrInitial(agent, "crm-avatar");
+  const dotClass = crmAgentBadgeClass(agent.role);
+  const roleShort = CRM_ROLE_SHORT[agent.role] || agent.role;
+
+  // meta line adapts to sort: show what's NOT already shown in section header
+  let meta = "";
+  if (sort === "alpha") {
+    // sections are letters → show dept + team
+    const parts = [];
+    if (agent.department && agent.department !== "GLOBAL") parts.push(agent.department);
+    if (agent.team && agent.team !== "Global") parts.push(agent.team.replace(/_/g," "));
+    meta = parts.join(" · ");
+  } else if (sort === "team") {
+    // sections are teams → show manager
+    meta = agent.manager || "";
+  } else if (sort === "role") {
+    // sections are roles → show team + dept
+    const parts = [];
+    if (agent.department && agent.department !== "GLOBAL") parts.push(agent.department);
+    if (agent.team && agent.team !== "Global") parts.push(agent.team.replace(/_/g," "));
+    meta = parts.join(" · ");
+  } else if (sort === "department") {
+    // sections are depts → show team + manager
+    const parts = [];
+    if (agent.team && agent.team !== "Global") parts.push(agent.team.replace(/_/g," "));
+    if (agent.manager) parts.push(agent.manager);
+    meta = parts.join(" · ");
+  }
+
+  return `<div class="crm-agent-row crm-person-target" data-name="${escapeHtml(agent.name)}" onclick="crmGoToProfile('${escapeHtml(agent.username)}')">
+    ${avatar}
+    <div class="crm-agent-row-info">
+      <div class="crm-agent-row-name crm-name-text">${escapeHtml(agent.name)}</div>
+      <div class="crm-agent-row-sub">
+        <span class="crm-agent-role-dot ${dotClass}"></span>
+        <span class="crm-agent-role-short">${escapeHtml(roleShort)}</span>
+        ${meta ? `<span style="color:rgba(255,255,255,0.2);font-size:10px;">·</span><span class="crm-agent-row-meta" style="margin-top:0">${escapeHtml(meta)}</span>` : ""}
+      </div>
+    </div>
+  </div>`;
+}
+
+function crmAgentSectionHtml(title, icon, agents, delay, sort) {
+  if (!agents.length) return "";
+  return `<div class="crm-agents-section crm-animate" style="animation-delay:${delay}s">
+    <div class="crm-agents-section-head" onclick="this.closest('.crm-agents-section').classList.toggle('collapsed')">
+      <span>${icon}</span>
+      <span class="crm-agents-section-title">${escapeHtml(title)}</span>
+      <span class="crm-agents-section-count">${agents.length}</span>
+      <span class="crm-agents-section-chevron">▾</span>
+    </div>
+    <div class="crm-agents-section-body">
+      <div class="crm-agents-section-inner">${agents.map(a => crmAgentRowHtml(a, sort)).join("")}</div>
+    </div>
+  </div>`;
+}
+
+function crmRenderAgentsView(data) {
+  const container = document.getElementById("crmAgentsList");
+  const all = crmBuildAgentsList(data).sort((a,b) => a.name.localeCompare(b.name));
+  let html = "";
+
+  const s = crmAgentSort;
+  if (s === "alpha") {
+    const byLetter = {};
+    all.forEach(a => { const l=a.name[0].toUpperCase(); (byLetter[l]=byLetter[l]||[]).push(a); });
+    html = Object.keys(byLetter).sort().map((l,i) => crmAgentSectionHtml(l,"🔤",byLetter[l],i*0.04,s)).join("");
+
+  } else if (s === "team") {
+    const byTeam = {};
+    all.forEach(a => { const k=a.team||"Unassigned"; (byTeam[k]=byTeam[k]||[]).push(a); });
+    html = Object.keys(byTeam).sort().map((t,i) => {
+      const dept = (byTeam[t][0]||{}).department||"";
+      return crmAgentSectionHtml(t, CRM_DEPT_FLAGS[dept]||"🏷️", byTeam[t], i*0.04, s);
+    }).join("");
+
+  } else if (s === "role") {
+    const byRole = {};
+    all.forEach(a => { (byRole[a.role]=byRole[a.role]||[]).push(a); });
+    html = CRM_ROLE_ORDER.filter(r=>byRole[r]).map((r,i) =>
+      crmAgentSectionHtml(CRM_ROLE_LABELS[r]||r, CRM_ROLE_ICONS[r]||"👤", byRole[r], i*0.04, s)
+    ).join("");
+
+  } else if (s === "department") {
+    const byDept = {};
+    all.forEach(a => { const k=a.department||"Unknown"; (byDept[k]=byDept[k]||[]).push(a); });
+    html = Object.keys(byDept).sort().map((d,i) =>
+      crmAgentSectionHtml(d, CRM_DEPT_FLAGS[d]||"🌐", byDept[d], i*0.04, s)
+    ).join("");
+  }
+
+  container.innerHTML = html || `<div class="crm-empty-state">Нет данных</div>`;
+}
+
+function crmSetAgentSort(sort) {
+  crmAgentSort = sort;
+  document.querySelectorAll(".crm-agents-sort-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("onclick").includes(`'${sort}'`));
+  });
+  if (crmLastData) { crmRenderAgentsView(crmLastData); crmApplySearch(); }
+}
+
+// Alternate, flatter way to look at the same org data: every department,
+// broken into its teams, broken into simple rows — no branches/columns,
+// just a scannable list. Same underlying data as the tree view.
+function crmRenderListView(data) {
+  crmLastData = data;
+  const departments = data?.departments || [];
+  const allTeams = departments.flatMap((d) => d.teams);
+
+  if (!allTeams.length && !data?.hos && !(data?.hor && data.hor.length)) {
+    return `<div class="crm-empty-state">${SafariPrefs.t("crmNoData")}</div>`;
+  }
+
+  const renderRow = (p, roleLabel) => `
+    <div class="crm-list-row crm-person-target crm-animate" data-name="${escapeHtml(p.name)}" onclick="crmGoToProfile('${escapeHtml(p.username)}')">
+      ${crmAvatarOrInitial(p, "crm-avatar")}
+      <span class="crm-list-row-name crm-name-text">${escapeHtml(p.name)}</span>
+      <span class="crm-list-row-role">${escapeHtml(roleLabel)}</span>
+    </div>
+  `;
+
+  const topRows = [
+    ...(data?.hos ? [renderRow(data.hos, SafariPrefs.t("crmHeadOfSales"))] : []),
+    ...((data?.hor || []).map((h) => renderRow(h, "Head of Retention")))
+  ].join("");
+
+  const renderDept = (kind, label, teams) => {
+    if (!teams.length) return "";
+    const teamsHtml = teams.map((t) => {
+      const teamLabel = (t.team || SafariPrefs.t("crmUnassigned")).replace(/_/g, " ");
+      const rows = [
+        ...(t.leads || []).map((l) => renderRow(l, SafariPrefs.t("crmTeamLead"))),
+        ...(t.members || []).map((m) => renderRow(m, m.role))
+      ].join("") || `<div class="crm-empty-team">${SafariPrefs.t("crmNoAgents")}</div>`;
+      return `
+        <div class="crm-list-team">
+          <div class="crm-list-team-name">${crmFlagFor(t.department)} ${escapeHtml(teamLabel)}</div>
+          <div class="crm-list-rows">${rows}</div>
+        </div>
+      `;
+    }).join("");
+    return `
+      <div class="crm-list-dept">
+        <div class="crm-list-dept-title ${kind}">${escapeHtml(label)}</div>
+        ${teamsHtml}
+      </div>
+    `;
+  };
+
+  const salesTeams = allTeams.filter((t) => t.kind === "sales");
+  const retentionTeams = allTeams.filter((t) => t.kind === "retention");
+
+  return (topRows ? `<div class="crm-list-rows" style="margin-bottom:18px;">${topRows}</div>` : "")
+    + renderDept("sales", "Sales Department", salesTeams)
+    + renderDept("retention", "Retention Department", retentionTeams);
+}
+
+function crmRenderStructure(data) {
+  crmLastData = data;
+  const departments = data?.departments || [];
+  const allTeams = departments.flatMap((d) => d.teams);
+  const salesTeams = allTeams.filter((t) => t.kind === "sales");
+  const retentionTeams = allTeams.filter((t) => t.kind === "retention");
+
+  const hosHtml = data?.hos ? crmRenderHos(data.hos) : "";
+  const horHtml = (data?.hor && data.hor.length) ? crmRenderHor(data.hor) : "";
+
+  if (!allTeams.length) {
+    return hosHtml + `<div class="crm-empty-state">${SafariPrefs.t("crmNoData")}</div>`;
+  }
+
+  const salesBlock = hosHtml || salesTeams.length
+    ? crmRenderDepartment("sales", "Sales Department", hosHtml + crmRenderBranch("sales", salesTeams, 0.12))
+    : "";
+
+  const retentionBlock = horHtml || retentionTeams.length
+    ? crmRenderDepartment("retention", "Retention Department", horHtml + crmRenderBranch("retention", retentionTeams, 0.12 + salesTeams.length * 0.05 + 0.05))
+    : "";
+
+  return salesBlock + retentionBlock;
+}
+
+function crmNormalize(s) {
+  return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function crmHighlightText(name, query) {
+  if (!query) return escapeHtml(name);
+  const norm = crmNormalize(name);
+  const idx = norm.indexOf(query);
+  if (idx === -1) return escapeHtml(name);
+  const before = name.slice(0, idx);
+  const matchTxt = name.slice(idx, idx + query.length);
+  const after = name.slice(idx + query.length);
+  return `${escapeHtml(before)}<mark class="crm-hl">${escapeHtml(matchTxt)}</mark>${escapeHtml(after)}`;
+}
+
+function crmApplySearch() {
+  const raw = document.getElementById("crmSearch").value.trim();
+  const query = crmNormalize(raw);
+  const metaEl = document.getElementById("crmSearchMeta");
+  const targets = document.querySelectorAll(".crm-person-target");
+  let matchCount = 0;
+
+  targets.forEach((el) => {
+    const name = el.getAttribute("data-name") || "";
+    const nameEl = el.querySelector(".crm-name-text") || el;
+    const isMatch = query && crmNormalize(name).includes(query);
+
+    if (query) {
+      nameEl.innerHTML = crmHighlightText(name, query);
+    } else {
+      nameEl.textContent = name;
+    }
+
+    if (!query) {
+      el.classList.remove("crm-fade", "crm-match");
+      return;
+    }
+    if (isMatch) {
+      matchCount++;
+      el.classList.remove("crm-fade");
+      el.classList.add("crm-match");
+    } else {
+      el.classList.add("crm-fade");
+      el.classList.remove("crm-match");
+    }
+  });
+
+  // tree/list view: dim columns with no matches
+  document.querySelectorAll(".crm-col").forEach((col) => {
+    if (!query) { col.classList.remove("crm-dim"); return; }
+    const hasMatch = col.querySelector(".crm-person-target.crm-match");
+    col.classList.toggle("crm-dim", !hasMatch);
+    if (hasMatch) col.classList.remove("collapsed");
+  });
+
+  // agents view: collapse sections with no matches, expand sections with matches
+  document.querySelectorAll(".crm-agents-section").forEach((sec) => {
+    if (!query) { sec.classList.remove("collapsed"); return; }
+    const hasMatch = sec.querySelector(".crm-person-target.crm-match");
+    if (hasMatch) {
+      sec.classList.remove("collapsed");
+      sec.style.display = "";
+    } else {
+      sec.style.display = "none";
+    }
+  });
+  // restore sections when query cleared
+  if (!query) {
+    document.querySelectorAll(".crm-agents-section").forEach(sec => sec.style.display = "");
+  }
+
+  if (query) {
+    metaEl.textContent = `${matchCount} ${SafariPrefs.t("crmFound")}`;
+    metaEl.classList.add("show");
+  } else {
+    metaEl.classList.remove("show");
+  }
+}
+
+document.getElementById("crmSearch").addEventListener("input", () => {
+  clearTimeout(window.__crmSearchT);
+  window.__crmSearchT = setTimeout(crmApplySearch, 60);
+});
+
+async function loadCRM() {
+  const content = document.getElementById("crmContent");
+  const subtitleEl = document.getElementById("crmSubtitle");
+
+  // If tree is already rendered and visible — just do a silent background refresh, no flicker
+  const alreadyRendered = crmLastData && content.children.length > 0 && content.innerText !== SafariPrefs.t("loading") && content.innerText !== SafariPrefs.t("failedToLoad");
+  if (alreadyRendered) {
+    fetch("/api/crm/structure")
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!data) return;
+        crmLastData = data;
+        if (crmViewMode === "agents") {
+          crmRenderAgentsView(data);
+        } else {
+          content.innerHTML = crmRenderCurrentView(data);
+          if (crmViewMode === "tree") crmWireBranchHover(content);
+        }
+        crmApplySearch();
+      })
+      .catch(() => {});
+    return;
+  }
+
+  // Have cached data but content was cleared — restore instantly without showing "Loading..."
+  if (crmLastData) {
+    if (crmViewMode === "agents") {
+      content.style.display = "none";
+      document.getElementById("crmAgentsView").style.display = "block";
+      crmRenderAgentsView(crmLastData);
+      crmApplySearch();
+    } else {
+      content.style.display = "block";
+      document.getElementById("crmAgentsView").style.display = "none";
+      content.innerHTML = crmRenderCurrentView(crmLastData);
+      if (crmViewMode === "tree") crmWireBranchHover(content);
+      crmApplySearch();
+    }
+    // Refresh in background
+    fetch("/api/crm/structure")
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!data) return;
+        crmLastData = data;
+        if (crmViewMode === "agents") {
+          crmRenderAgentsView(data);
+        } else {
+          content.innerHTML = crmRenderCurrentView(data);
+          if (crmViewMode === "tree") crmWireBranchHover(content);
+        }
+        crmApplySearch();
+      })
+      .catch(() => {});
+    return;
+  }
+
+  // First ever load — show loading indicator
+  content.innerText = SafariPrefs.t("loading");
+
+  try {
+    if (user.role && user.role !== "hos" && user.role !== "admin") {
+      subtitleEl.setAttribute("data-i18n", "crmSubtitleMyTeam");
+      subtitleEl.textContent = SafariPrefs.t("crmSubtitleMyTeam");
+    } else {
+      subtitleEl.setAttribute("data-i18n", "crmSubtitleOrg");
+      subtitleEl.textContent = SafariPrefs.t("crmSubtitleOrg");
+    }
+
+    const res = await fetch("/api/crm/structure");
+    if (!res.ok) throw new Error("failed");
+    const data = await res.json();
+    content.innerHTML = crmRenderCurrentView(data);
+    if (crmViewMode === "tree") crmWireBranchHover(content);
+  } catch (e) {
+    content.innerText = SafariPrefs.t("failedToLoad");
+  }
+}
+
+// Highlights the whole branch (trunk + connector bars) while the user
+// hovers any team column inside it, without shifting or resizing siblings.
+function crmWireBranchHover(root) {
+  root.querySelectorAll(".crm-col").forEach((col) => {
+    const branch = col.closest(".crm-branch");
+    if (!branch) return;
+    col.addEventListener("mouseenter", () => {
+      branch.classList.add("crm-branch-active");
+      col.classList.add("crm-branch-hover");
+    });
+    col.addEventListener("mouseleave", () => {
+      branch.classList.remove("crm-branch-active");
+      col.classList.remove("crm-branch-hover");
+    });
+  });
+}
+
+/* ====================== TICKETS ====================== */
+
+let ticketsCache = [];
+let assignableUsersCache = [];
+let selectedAssignee = null;
+let pendingTicketFiles = [];
+
+const TICKET_DESC_MAX = 5000;
+const TICKET_DESC_MIN = 10;
+
+function ticketStatusLabel(status) {
+  return SafariPrefs.t("status" + status.split("_").map(w => w[0].toUpperCase() + w.slice(1)).join(""));
+}
+
+// Department -> problem-type taxonomy (IT / Telephony / CRM), fetched once
+// from the server and used to build both the filter dropdown and the
+// create-ticket select as grouped <optgroup>s — so adding a new problem
+// type server-side just shows up here automatically.
+let ticketTypesCache = [];
+
+async function loadTicketTypes() {
+  try {
+    const res = await fetch("/api/tickets/types");
+    if (!res.ok) throw new Error("failed");
+    ticketTypesCache = await res.json();
+  } catch (e) {
+    ticketTypesCache = [];
+  }
+  populateTicketTypeSelects();
+}
+
+function populateTicketTypeSelects() {
+  const groupsHtml = ticketTypesCache.map(dept => `
+    <optgroup label="${escapeHtml(dept.label)}">
+      ${dept.types.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("")}
+    </optgroup>
+  `).join("");
+
+  const filterSelect = document.getElementById("ticketTypeFilter");
+  const currentFilterValue = filterSelect.value;
+  filterSelect.innerHTML = `<option value="" data-i18n="filterAllTypes">${SafariPrefs.t("filterAllTypes")}</option>${groupsHtml}`;
+  filterSelect.value = currentFilterValue;
+
+  const inputSelect = document.getElementById("ticketTypeInput");
+  inputSelect.innerHTML = `<option value="">—</option>${groupsHtml}`;
+}
+
+async function loadTickets() {
+  const list = document.getElementById("ticketsList");
+  list.innerText = SafariPrefs.t("loading");
+
+  try {
+    const res = await fetch("/api/tickets");
+    if (!res.ok) throw new Error("failed");
+    ticketsCache = await res.json();
+    renderTicketsList();
+  } catch (e) {
+    list.innerText = SafariPrefs.t("failedToLoad");
+  }
+}
+
+let ticketViewMode = 'kanban'; // 'kanban' | 'list'
+
+function setTicketView(mode) {
+  ticketViewMode = mode;
+  document.getElementById('ticketViewKanban').classList.toggle('active', mode === 'kanban');
+  document.getElementById('ticketViewList').classList.toggle('active', mode === 'list');
+  renderTicketsList();
+}
+
+const KANBAN_COLS = [
+  { status: 'open',        label: 'Open',        dot: '#e0d27a', accentColor: '#e0d27a22' },
+  { status: 'in_progress', label: 'In Progress',  dot: '#7adada', accentColor: '#7adada22' },
+  { status: 'resolved',    label: 'Resolved',     dot: '#7be07b', accentColor: '#7be07b22' },
+  { status: 'closed',      label: 'Closed',       dot: '#666680', accentColor: '#66668022' },
+];
+
+function renderTicketsStats(tickets) {
+  const statsEl = document.getElementById('ticketsStats');
+  if (!statsEl) return;
+  const counts = { open: 0, in_progress: 0, resolved: 0, closed: 0 };
+  tickets.forEach(t => { if (counts[t.status] !== undefined) counts[t.status]++; });
+  const total = tickets.length;
+  statsEl.innerHTML = `
+    <div class="tickets-stat-pill">
+      <span class="stat-dot" style="background:var(--muted)"></span>
+      <span class="stat-count">${total}</span>
+      <span>Total</span>
+    </div>
+    ${KANBAN_COLS.map(c => `
+      <div class="tickets-stat-pill">
+        <span class="stat-dot" style="background:${c.dot}"></span>
+        <span class="stat-count">${counts[c.status]}</span>
+        <span>${c.label}</span>
+      </div>
+    `).join('')}
+  `;
+}
+
+function ticketCardAvatarHtml(u, username) {
+  if (u && u.avatar) return `<img class="ticket-card-avatar" src="${u.avatar}" title="${escapeHtml(u.name)}">`;
+  const name = u ? u.name : username;
+  const initial = (name || '?').trim().charAt(0).toUpperCase();
+  return `<div class="ticket-card-avatar" title="${escapeHtml(name)}">${escapeHtml(initial)}</div>`;
+}
+
+function formatTicketDate(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = now - d;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+  if (diff < 604800000) return Math.floor(diff / 86400000) + 'd ago';
+  return d.toLocaleDateString();
+}
+
+function renderTicketsList() {
+  const list = document.getElementById('ticketsList');
+  const statusFilter = document.getElementById('ticketStatusFilter').value;
+  const typeFilter = document.getElementById('ticketTypeFilter').value;
+
+  const filtered = ticketsCache.filter(t =>
+    (!statusFilter || t.status === statusFilter) &&
+    (!typeFilter || t.type === typeFilter)
+  );
+
+  renderTicketsStats(filtered);
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="tickets-empty">No tickets found</div>`;
+    return;
+  }
+
+  if (ticketViewMode === 'kanban') {
+    renderKanban(list, filtered);
+  } else {
+    renderListView(list, filtered);
+  }
+}
+
+function renderKanban(container, tickets) {
+  const colsToShow = KANBAN_COLS.filter(c => {
+    const sf = document.getElementById('ticketStatusFilter').value;
+    return !sf || sf === c.status;
+  });
+
+  container.innerHTML = `<div class="tickets-kanban" style="grid-template-columns:repeat(${colsToShow.length},1fr)">${
+    colsToShow.map(col => {
+      const colTickets = tickets.filter(t => t.status === col.status);
+      const cards = colTickets.length
+        ? colTickets.map(t => {
+            const cu = usersDirectory[t.created_by];
+            const au = usersDirectory[t.assigned_to];
+            return `
+              <div class="ticket-card" onclick="openTicketDetail('${t.id}')">
+                <div class="ticket-card-accent" style="background:${col.dot}"></div>
+                <div class="ticket-card-id">${escapeHtml(t.id)}</div>
+                <div class="ticket-card-type">${escapeHtml(t.type)}</div>
+                <div class="ticket-card-desc">${escapeHtml(t.description)}</div>
+                <div class="ticket-card-footer">
+                  <div class="ticket-card-people">
+                    ${ticketCardAvatarHtml(cu, t.created_by)}
+                    ${ticketCardAvatarHtml(au, t.assigned_to)}
+                  </div>
+                  <span class="ticket-card-date">${formatTicketDate(t.created_at)}</span>
+                </div>
+              </div>`;
+          }).join('')
+        : `<div class="kanban-empty">No tickets</div>`;
+
+      return `
+        <div class="kanban-col">
+          <div class="kanban-col-head">
+            <div class="kanban-col-title">
+              <span class="kanban-col-dot" style="background:${col.dot}"></span>
+              ${col.label}
+            </div>
+            <span class="kanban-col-count">${colTickets.length}</span>
+          </div>
+          <div class="kanban-col-body">${cards}</div>
+        </div>`;
+    }).join('')
+  }</div>`;
+}
+
+function renderListView(container, tickets) {
+  container.innerHTML = `<div class="tickets-list">${
+    tickets.map(t => {
+      const cu = usersDirectory[t.created_by];
+      const au = usersDirectory[t.assigned_to];
+      return `
+        <div class="ticket-list-row" onclick="openTicketDetail('${t.id}')">
+          <div class="ticket-list-left">
+            <div class="ticket-list-top">
+              <span class="ticket-id">${escapeHtml(t.id)}</span>
+              <span class="ticket-type">${escapeHtml(t.type)}</span>
+            </div>
+            <div class="ticket-list-desc">${escapeHtml(t.description)}</div>
+          </div>
+          <div class="ticket-list-right">
+            <span class="ticket-status-badge ticket-status-${t.status}">${ticketStatusLabel(t.status)}</span>
+            <div class="ticket-meta">
+              <span class="ticket-meta-person">${avatarHtml(cu ? cu.name : t.created_by, cu ? cu.avatar : null, 'ticket-meta-avatar')} ${escapeHtml(cu ? cu.name : t.created_by)}</span>
+              <span>→</span>
+              <span class="ticket-meta-person">${avatarHtml(au ? au.name : t.assigned_to, au ? au.avatar : null, 'ticket-meta-avatar')} ${escapeHtml(au ? au.name : t.assigned_to)}</span>
+              <span>${formatTicketDate(t.created_at)}</span>
+            </div>
+          </div>
+        </div>`;
+    }).join('')
+  }</div>`;
+}
+
+// Lightweight directory keyed by username, built from /api/crm/users so
+// ticket cards can show names/avatars without extra round trips.
+let usersDirectory = {};
+
+async function loadUsersDirectory() {
+  try {
+    const res = await fetch("/api/crm/users");
+    if (!res.ok) return;
+    const list = await res.json();
+    usersDirectory = {};
+    list.forEach(u => { usersDirectory[u.username] = u; });
+  } catch (e) {
+    // non-fatal; ticket cards fall back to raw usernames
+  }
+}
+
+/* ---------- Create Ticket Modal ---------- */
+
+function openCreateTicketModal() {
+  if (!user.team) {
+    alert(SafariPrefs.t("noTeamForTickets"));
+    return;
+  }
+
+  document.getElementById("ticketTypeInput").value = "";
+  document.getElementById("ticketDescInput").value = "";
+  document.getElementById("ticketDescCount").innerText = `0 / ${TICKET_DESC_MAX}`;
+  document.getElementById("assigneeSearchInput").value = "";
+  document.getElementById("assigneeResults").innerHTML = "";
+  document.getElementById("assigneeResults").classList.remove("show");
+  document.getElementById("assigneeSelectedBox").innerHTML = "";
+  document.getElementById("ticketFileList").innerHTML = "";
+  document.getElementById("ticketFileInput").value = "";
+  clearTicketErrors();
+
+  selectedAssignee = null;
+  pendingTicketFiles = [];
+
+  loadAssignableUsers();
+
+  document.getElementById("createTicketModal").classList.add("show");
+}
+
+function closeCreateTicketModal() {
+  document.getElementById("createTicketModal").classList.remove("show");
+}
+
+function clearTicketErrors() {
+  document.getElementById("ticketTypeError").innerText = "";
+  document.getElementById("ticketDescError").innerText = "";
+  document.getElementById("ticketAssigneeError").innerText = "";
+}
+
+async function loadAssignableUsers() {
+  try {
+    const res = await fetch("/api/tickets/assignable-users");
+    if (!res.ok) throw new Error("failed");
+    assignableUsersCache = await res.json();
+  } catch (e) {
+    assignableUsersCache = [];
+  }
+}
+
+document.getElementById("ticketDescInput").addEventListener("input", (e) => {
+  const len = e.target.value.length;
+  const countEl = document.getElementById("ticketDescCount");
+  countEl.innerText = `${len} / ${TICKET_DESC_MAX}`;
+  countEl.classList.toggle("invalid", len > 0 && len < TICKET_DESC_MIN);
+});
+
+const assigneeSearchInput = document.getElementById("assigneeSearchInput");
+const assigneeResults = document.getElementById("assigneeResults");
+
+assigneeSearchInput.addEventListener("input", () => {
+  const q = assigneeSearchInput.value.trim().toLowerCase();
+  const matches = assignableUsersCache.filter(u => !q || u.name.toLowerCase().includes(q));
+
+  if (!matches.length) {
+    assigneeResults.innerHTML = `<div class="assignee-result-item" style="color:var(--muted);cursor:default;">${SafariPrefs.t("noTicketsFound")}</div>`;
+    assigneeResults.classList.add("show");
+    return;
+  }
+
+  assigneeResults.innerHTML = matches.map(u => `
+    <div class="assignee-result-item" onclick='selectAssignee(${JSON.stringify(u).replace(/'/g, "&#39;")})'>
+      ${avatarHtml(u.name, u.avatar, "assignee-result-avatar")}
+      <span>${escapeHtml(u.name)}</span>
+    </div>
+  `).join("");
+  assigneeResults.classList.add("show");
+});
+
+assigneeSearchInput.addEventListener("focus", () => {
+  if (assigneeSearchInput.value.trim()) {
+    assigneeResults.classList.add("show");
+  }
+});
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".assignee-search")) {
+    assigneeResults.classList.remove("show");
+  }
+});
+
+function selectAssignee(u) {
+  selectedAssignee = u;
+  assigneeSearchInput.value = "";
+  assigneeResults.classList.remove("show");
+
+  document.getElementById("assigneeSelectedBox").innerHTML = `
+    <div class="assignee-selected">
+      ${avatarHtml(u.name, u.avatar, "assignee-result-avatar")}
+      <span>${escapeHtml(u.name)}</span>
+      <button onclick="clearAssignee()" title="Remove">✕</button>
+    </div>
+  `;
+}
+
+function clearAssignee() {
+  selectedAssignee = null;
+  document.getElementById("assigneeSelectedBox").innerHTML = "";
+}
+
+const ticketFileInput = document.getElementById("ticketFileInput");
+ticketFileInput.addEventListener("change", () => {
+  const newFiles = Array.from(ticketFileInput.files || []);
+  pendingTicketFiles = pendingTicketFiles.concat(newFiles).slice(0, 5);
+  renderTicketFileList();
+  ticketFileInput.value = "";
+});
+
+function renderTicketFileList() {
+  const box = document.getElementById("ticketFileList");
+  box.innerHTML = pendingTicketFiles.map((f, i) => `
+    <div class="file-list-item">
+      <span>📄 ${escapeHtml(f.name)} (${(f.size / 1024 / 1024).toFixed(1)} MB)</span>
+      <button onclick="removeTicketFile(${i})">✕</button>
+    </div>
+  `).join("");
+}
+
+function removeTicketFile(index) {
+  pendingTicketFiles.splice(index, 1);
+  renderTicketFileList();
+}
+
+async function submitTicket() {
+  clearTicketErrors();
+
+  const type = document.getElementById("ticketTypeInput").value;
+  const description = document.getElementById("ticketDescInput").value.trim();
+
+  let hasError = false;
+
+  if (!type) {
+    document.getElementById("ticketTypeError").innerText = SafariPrefs.t("selectTypeError");
+    hasError = true;
+  }
+  if (description.length < TICKET_DESC_MIN) {
+    document.getElementById("ticketDescError").innerText = SafariPrefs.t("descTooShortError");
+    hasError = true;
+  }
+  if (!selectedAssignee) {
+    document.getElementById("ticketAssigneeError").innerText = SafariPrefs.t("selectAssigneeError");
+    hasError = true;
+  }
+
+  if (hasError) return;
+
+  const submitBtn = document.getElementById("submitTicketBtn");
+  submitBtn.disabled = true;
+
+  try {
+    const formData = new FormData();
+    formData.append("type", type);
+    formData.append("description", description);
+    formData.append("assigned_to", selectedAssignee.username);
+    pendingTicketFiles.forEach(f => formData.append("attachments", f));
+
+    const res = await fetch("/api/tickets", { method: "POST", body: formData });
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || SafariPrefs.t("uploadFailed"));
+      return;
+    }
+
+    closeCreateTicketModal();
+    showSimpleToast(SafariPrefs.t("ticketCreatedSuccess"));
+    loadTickets();
+  } catch (e) {
+    alert(SafariPrefs.t("uploadFailed"));
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+function showSimpleToast(message) {
+  const toast = document.getElementById("toast");
+  toast.innerHTML = `<div>${escapeHtml(message)}</div>`;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), 3500);
+}
+
+/* ---------- Ticket Detail Modal ---------- */
+
+function openTicketDetail(ticketId) {
+  const ticket = ticketsCache.find(t => t.id === ticketId);
+  if (!ticket) return;
+
+  const createdByUser = usersDirectory[ticket.created_by];
+  const assignedToUser = usersDirectory[ticket.assigned_to];
+
+  const isTeamLeaderRole = user.role === "tl_sales" || user.role === "tl_retention";
+  const ticketCreator = usersDirectory[ticket.created_by];
+  const canChangeStatus = ticket.assigned_to === user.username ||
+    user.role === "hos" ||
+    user.role === "admin" ||
+    (isTeamLeaderRole && ticketCreator && ticketCreator.manager === user.name);
+
+  const attachmentsHtml = ticket.attachments && ticket.attachments.length
+    ? `<div class="ticket-detail-attachments">${ticket.attachments.map(a =>
+        `<a href="${a.url}" target="_blank">📎 ${escapeHtml(a.name)}</a>`
+      ).join("")}</div>`
+    : "";
+
+  const statusOptions = ["open", "in_progress", "resolved", "closed"]
+    .map(s => `<option value="${s}" ${s === ticket.status ? "selected" : ""}>${ticketStatusLabel(s)}</option>`)
+    .join("");
+
+  document.getElementById("ticketDetailBox").innerHTML = `
+    <h2>${escapeHtml(ticket.id)} — ${escapeHtml(ticket.type)}</h2>
+    <div class="ticket-detail-row">
+      <span class="label">${SafariPrefs.t("ticketCreatedBy")}</span>
+      <span>${escapeHtml(createdByUser ? createdByUser.name : ticket.created_by)}</span>
+    </div>
+    <div class="ticket-detail-row">
+      <span class="label">${SafariPrefs.t("ticketAssignedTo")}</span>
+      <span>${escapeHtml(assignedToUser ? assignedToUser.name : ticket.assigned_to)}</span>
+    </div>
+    <div class="ticket-detail-row">
+      <span class="label">${SafariPrefs.t("ticketCreatedAt")}</span>
+      <span>${new Date(ticket.created_at).toLocaleString()}</span>
+    </div>
+    <div class="form-group">
+      <label>${SafariPrefs.t("ticketDescription")}</label>
+      <div>${escapeHtml(ticket.description)}</div>
+      ${attachmentsHtml}
+    </div>
+    ${canChangeStatus ? `
+      <div class="status-select-row form-group">
+        <label>${SafariPrefs.t("changeStatus")}</label>
+        <select id="ticketStatusSelect">${statusOptions}</select>
+      </div>
+    ` : `
+      <div class="status-select-row">
+        <span class="ticket-status-badge ticket-status-${ticket.status}">${ticketStatusLabel(ticket.status)}</span>
+      </div>
+    `}
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeTicketDetail()">${SafariPrefs.t("close")}</button>
+      ${canChangeStatus ? `<button class="btn-submit" onclick="saveTicketStatus('${ticket.id}')">${SafariPrefs.t("changeStatus")}</button>` : ""}
+    </div>
+  `;
+
+  document.getElementById("ticketDetailModal").classList.add("show");
+}
+
+function closeTicketDetail() {
+  document.getElementById("ticketDetailModal").classList.remove("show");
+}
+
+async function saveTicketStatus(ticketId) {
+  const status = document.getElementById("ticketStatusSelect").value;
+
+  try {
+    const res = await fetch(`/api/tickets/${ticketId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || SafariPrefs.t("uploadFailed"));
+      return;
+    }
+
+    closeTicketDetail();
+    loadTickets();
+  } catch (e) {
+    alert(SafariPrefs.t("uploadFailed"));
+  }
+}
+
+/* ====================== PRESENCE / STATUS ====================== */
+
+let myPresence = { status: 'online', since: Date.now(), breakLog: [] };
+let pendingStatus = null;
+let breakTimerInterval = null;
+let allPresence = {}; // username -> presence
+
+const STATUS_CONFIG = {
+  online:  { dot: '#7be07b', label: 'Online' },
+  offline: { dot: '#666680', label: 'Offline' },
+  lunch:   { dot: '#e0c07a', label: 'Lunch' },
+  break:   { dot: '#7ac4e0', label: 'Break' }
+};
+
+function statusTopbarClickTarget() {
+  const s = myPresence.status;
+  if (s === 'lunch' || s === 'break') return s; // open active panel
+  return 'menu'; // open menu to pick lunch/break
+}
+
+function updateMyStatusUI() {
+  const cfg = STATUS_CONFIG[myPresence.status] || STATUS_CONFIG.online;
+  document.getElementById('myStatusDot').style.background = cfg.dot;
+  document.getElementById('myStatusLabel').textContent = cfg.label;
+
+  const onBreak = myPresence.status === 'lunch' || myPresence.status === 'break';
+
+  // Timer in topbar
+  if (onBreak) {
+    const entry = myPresence.breakLog && myPresence.breakLog[myPresence.breakLog.length - 1];
+    if (entry) {
+      const elapsed = Math.floor((Date.now() - entry.start) / 1000);
+      const total = entry.allocatedMinutes * 60;
+      const remaining = total - elapsed;
+      const timerEl = document.getElementById('myStatusTimer');
+      if (remaining > 0) {
+        timerEl.textContent = '· ' + formatSeconds(remaining);
+        timerEl.style.color = remaining < 120 ? '#e07a7a' : 'var(--muted)';
+      } else {
+        timerEl.textContent = '· ⚠ +' + formatSeconds(-remaining);
+        timerEl.style.color = '#e07a7a';
+      }
+    }
+  } else {
+    document.getElementById('myStatusTimer').textContent = '';
+  }
+}
+
+function formatSeconds(secs) {
+  const m = Math.floor(Math.abs(secs) / 60);
+  const s = Math.abs(secs) % 60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// Start timer refresh
+function startPresenceTimer() {
+  if (breakTimerInterval) clearInterval(breakTimerInterval);
+  breakTimerInterval = setInterval(() => {
+    updateMyStatusUI();
+    updateBreakLockscreen();
+    if (document.getElementById('statusConfirmModal').classList.contains('show')) {
+      updateBreakModalTimer();
+    }
+  }, 1000);
+}
+
+function updateBreakLockscreen() {
+  const lock = document.getElementById('breakLockscreen');
+  const onBreak = myPresence.status === 'lunch' || myPresence.status === 'break';
+
+  if (!onBreak) {
+    lock.style.display = 'none';
+    return;
+  }
+
+  lock.style.display = 'flex';
+
+  const isLunch = myPresence.status === 'lunch';
+  document.getElementById('breakLockIcon').textContent = isLunch ? '🍽' : '☕';
+  document.getElementById('breakLockTitle').textContent = isLunch ? 'Lunch break' : 'Break';
+  document.getElementById('breakLockAddLunch').style.display = isLunch ? 'none' : '';
+
+  const entry = myPresence.breakLog && myPresence.breakLog[myPresence.breakLog.length - 1];
+  if (!entry) return;
+
+  const elapsed = Math.floor((Date.now() - entry.start) / 1000);
+  const total = entry.allocatedMinutes * 60;
+  const remaining = total - elapsed;
+  const timerEl = document.getElementById('breakLockTimer');
+
+  if (remaining > 0) {
+    timerEl.textContent = formatSeconds(remaining);
+    timerEl.className = 'break-timer-big';
+  } else {
+    timerEl.textContent = '+' + formatSeconds(-remaining);
+    timerEl.className = 'break-timer-big warning';
+  }
+
+  const sinceTime = new Date(entry.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('breakLockSince').textContent = `Начало: ${sinceTime} · выделено ${entry.allocatedMinutes} мин`;
+
+  // Log
+  const logEl = document.getElementById('breakLockLog');
+  logEl.innerHTML = (myPresence.breakLog || []).map(b => {
+    const dur = b.end ? Math.round((b.end - b.start) / 60000) + ' мин' : 'сейчас';
+    const lbl = b.type === 'lunch' ? '🍽 Ланч' : '☕ Брейк';
+    return `<li>${lbl} — ${b.allocatedMinutes} мин — ${dur}</li>`;
+  }).join('');
+}
+
+// Request a status change — show confirm modal first
+function requestStatusChange(status) {
+  if (status === 'menu') {
+    // Show choice menu
+    openStatusMenuModal();
+    return;
+  }
+  pendingStatus = status;
+  if (status === 'online') {
+    // "I'm back" — show active panel (already on break)
+    openStatusModal(true);
+  } else {
+    openStatusModal(false);
+  }
+}
+
+async function openStatusMenuModal() {
+  const modal = document.getElementById('statusConfirmModal');
+  document.getElementById('statusConfirmTitle').textContent = 'Сменить статус';
+  document.getElementById('statusConfirmDesc').textContent = '';
+  document.getElementById('statusActivePanel').style.display = 'none';
+  document.getElementById('statusConfirmButtons').style.display = 'flex';
+  document.getElementById('statusConfirmButtons').innerHTML = '<span style="color:var(--muted);font-size:13px;">Загрузка...</span>';
+  modal.classList.add('show');
+
+  // Always fetch fresh limits from server
+  let lim = { break: { remaining: 99, limit: 3, used: 0 }, lunch: { remaining: 1, limit: 1, used: 0, cooldownUntil: null } };
+  try {
+    const r = await fetch('/api/presence/limits');
+    if (r.ok) { lim = await r.json(); window._breakLimits = lim; }
+  } catch(e) {}
+
+  const breakLeft = lim.break.remaining;
+  const lunchLeft = lim.lunch.remaining;
+  const cooldownUntil = lim.lunch.cooldownUntil;
+
+  const breakDisabled = breakLeft <= 0;
+  const lunchCooldown = cooldownUntil && cooldownUntil > Date.now();
+  const lunchDisabled = lunchLeft <= 0 || lunchCooldown;
+
+  // Break button label
+  let breakLabel, breakColor;
+  if (breakDisabled) {
+    breakLabel = lim.lunch.used > 0 ? '☕ Break (после ланча — 1 брейк)' : '☕ Break (лимит исчерпан)';
+    breakColor = 'var(--muted)';
+  } else {
+    breakLabel = `☕ Break (15 мин) — осталось: ${breakLeft}`;
+    breakColor = 'var(--text)';
+  }
+
+  // Lunch button label
+  let lunchLabel, lunchColor;
+  if (lunchLeft <= 0) {
+    lunchLabel = '🍽 Lunch (уже использован)';
+    lunchColor = 'var(--muted)';
+  } else if (lunchCooldown) {
+    const minsLeft = Math.ceil((cooldownUntil - Date.now()) / 60000);
+    lunchLabel = `🍽 Lunch (подожди ${minsLeft} мин)`;
+    lunchColor = '#e0a050';
+  } else {
+    lunchLabel = '🍽 Lunch (45 мин)';
+    lunchColor = 'var(--text)';
+  }
+
+  const btnBase = 'background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 16px;';
+  document.getElementById('statusConfirmButtons').innerHTML = `
+    <button onclick="${lunchDisabled ? '' : "pendingStatus='lunch';openStatusModal(false);"}"
+      style="${btnBase}color:${lunchColor};cursor:${lunchDisabled ? 'not-allowed' : 'pointer'};opacity:${lunchDisabled ? '0.45' : '1'};"
+      ${lunchDisabled ? 'disabled' : ''}>${lunchLabel}</button>
+    <button onclick="${breakDisabled ? '' : "pendingStatus='break';openStatusModal(false);"}"
+      style="${btnBase}color:${breakColor};cursor:${breakDisabled ? 'not-allowed' : 'pointer'};opacity:${breakDisabled ? '0.45' : '1'};"
+      ${breakDisabled ? 'disabled' : ''}>${breakLabel}</button>
+    <button onclick="closeStatusModal()" style="${btnBase}color:var(--muted);cursor:pointer;">Отмена</button>
+  `;
+}
+
+function openStatusModal(showActive) {
+  const modal = document.getElementById('statusConfirmModal');
+  const title = document.getElementById('statusConfirmTitle');
+  const desc = document.getElementById('statusConfirmDesc');
+  const activePanel = document.getElementById('statusActivePanel');
+  const confirmBtns = document.getElementById('statusConfirmButtons');
+  const addLunchBtn = document.getElementById('addLunchBtn');
+
+  // Reset confirm buttons to default HTML
+  confirmBtns.innerHTML = `
+    <button onclick="confirmStatusChange(pendingStatus)" style="background:var(--accent);color:#000;border:none;border-radius:6px;padding:8px 20px;cursor:pointer;font-weight:600;" id="statusConfirmYes">Yes, go</button>
+    <button onclick="closeStatusModal()" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 20px;cursor:pointer;">Cancel</button>
+  `;
+
+  if (showActive) {
+    title.textContent = myPresence.status === 'lunch' ? '🍽 Lunch break' : '☕ Break';
+    desc.textContent = '';
+    activePanel.style.display = '';
+    confirmBtns.style.display = 'none';
+    addLunchBtn.style.display = myPresence.status === 'break' ? '' : 'none';
+    updateBreakModalTimer();
+  } else {
+    if (pendingStatus === 'lunch') {
+      title.textContent = '🍽 Lunch break?';
+      desc.textContent = 'You will be marked as on Lunch (45 minutes). Are you sure?';
+      document.getElementById('statusConfirmYes').textContent = 'Yes, go to lunch';
+    } else {
+      title.textContent = '☕ Break?';
+      desc.textContent = 'You will be marked as on Break (15 minutes). Are you sure?';
+      document.getElementById('statusConfirmYes').textContent = 'Yes, take a break';
+    }
+    activePanel.style.display = 'none';
+    confirmBtns.style.display = 'flex';
+  }
+
+  modal.classList.add('show');
+}
+
+function updateBreakModalTimer() {
+  const entry = myPresence.breakLog && myPresence.breakLog[myPresence.breakLog.length - 1];
+  if (!entry) return;
+
+  const elapsed = Math.floor((Date.now() - entry.start) / 1000);
+  const total = entry.allocatedMinutes * 60;
+  const remaining = total - elapsed;
+  const timerEl = document.getElementById('breakTimerDisplay');
+  const labelEl = document.getElementById('breakTimerLabel');
+
+  if (remaining > 0) {
+    timerEl.textContent = formatSeconds(remaining);
+    timerEl.className = 'break-timer-big';
+    labelEl.textContent = `${entry.allocatedMinutes} min ${myPresence.status} — time remaining`;
+  } else {
+    timerEl.textContent = '+' + formatSeconds(-remaining);
+    timerEl.className = 'break-timer-big warning';
+    labelEl.textContent = '⚠ Overtime — please return!';
+  }
+
+  // Break log list
+  const logEl = document.getElementById('breakLogList');
+  logEl.innerHTML = (myPresence.breakLog || []).map((b, i) => {
+    const dur = b.end
+      ? Math.round((b.end - b.start) / 60000) + ' min'
+      : 'ongoing';
+    const label = b.type === 'lunch' ? '🍽 Lunch' : '☕ Break';
+    return `<li>${label} — ${b.allocatedMinutes} min allocated — ${dur}</li>`;
+  }).join('');
+}
+
+function closeStatusModal() {
+  document.getElementById('statusConfirmModal').classList.remove('show');
+}
+
+async function confirmStatusChange(status) {
+  closeStatusModal();
+  try {
+    const res = await fetch('/api/presence/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      const prevStatus = myPresence.status;
+      myPresence = data.presence;
+      updateMyStatusUI();
+      updateBreakLockscreen();
+      refreshBreakLimitsUI();
+
+      // Send notification to GLOBAL chat
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      let chatMsg = null;
+
+      if (status === 'lunch') {
+        chatMsg = `🍽 ${user.name} ушёл на ланч в ${timeStr}`;
+      } else if (status === 'break') {
+        chatMsg = `☕ ${user.name} ушёл на брейк в ${timeStr}`;
+      } else if (status === 'online' && (prevStatus === 'lunch' || prevStatus === 'break')) {
+        const typeLabel = prevStatus === 'lunch' ? 'ланча' : 'брейка';
+        chatMsg = `✅ ${user.name} вернулся с ${typeLabel} в ${timeStr}`;
+      }
+
+      if (chatMsg && user.name) {
+        socket.emit('msg', {
+          room: 'LUNCH_BREAK',
+          text: chatMsg,
+          user: user.name
+        });
+      }
+    } else {
+      // Show limit error to agent
+      const errMsg = data.error || 'Не удалось сменить статус';
+      showStatusLimitError(errMsg);
+    }
+  } catch(e) {
+    console.error('Status change failed', e);
+  }
+}
+
+// Show a toast-style error when break/lunch limit is hit
+function showStatusLimitError(msg) {
+  let el = document.getElementById('statusLimitToast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'statusLimitToast';
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#3a1e1e;color:#e07a7a;border:1px solid #e07a7a;border-radius:8px;padding:12px 22px;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 4px 16px #0008;pointer-events:none;transition:opacity .3s;';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => { el.style.opacity = '0'; }, 3500);
+}
+
+// Refresh break/lunch button availability based on remaining limits
+async function refreshBreakLimitsUI() {
+  try {
+    const res = await fetch('/api/presence/limits');
+    if (!res.ok) return;
+    const limits = await res.json();
+    // Store limits for use in menu rendering
+    window._breakLimits = limits;
+  } catch(e) {}
+}
+
+// +Lunch button while on break — checks lunch limit fresh from server, then switches status to lunch
+async function addLunchFromBreak() {
+  try {
+    const r = await fetch('/api/presence/limits');
+    if (r.ok) {
+      const lim = await r.json();
+      window._breakLimits = lim;
+      if (lim.lunch.remaining <= 0) {
+        showStatusLimitError('Лимит ланча исчерпан — максимум 1 ланч в день');
+        return;
+      }
+      if (lim.lunch.cooldownUntil && lim.lunch.cooldownUntil > Date.now()) {
+        const minsLeft = Math.ceil((lim.lunch.cooldownUntil - Date.now()) / 60000);
+        showStatusLimitError(`Ланч недоступен — подожди ещё ${minsLeft} мин после 2 брейков`);
+        return;
+      }
+    }
+  } catch(e) {}
+  closeStatusModal();
+  await confirmStatusChange('lunch');
+}
+
+function extendBreak(minutes) {
+  // Show confirmation before extending
+  const typeLabel = myPresence.status === 'lunch' ? 'ланч' : 'брейк';
+  const modal = document.getElementById('statusConfirmModal');
+  document.getElementById('statusConfirmTitle').textContent = `+${minutes} мин к ${typeLabel === 'ланч' ? 'ланчу' : 'брейку'}?`;
+  document.getElementById('statusConfirmDesc').textContent = `Добавить ещё ${minutes} минут к текущему ${typeLabel}?`;
+  document.getElementById('statusActivePanel').style.display = 'none';
+  document.getElementById('statusConfirmButtons').style.display = 'flex';
+  document.getElementById('statusConfirmButtons').innerHTML = `
+    <button onclick="doExtendBreak(${minutes})" style="background:var(--accent);color:#000;border:none;border-radius:6px;padding:8px 20px;cursor:pointer;font-weight:600;">Да, добавить</button>
+    <button onclick="closeStatusModal()" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 20px;cursor:pointer;">Отмена</button>
+  `;
+  modal.classList.add('show');
+}
+
+async function doExtendBreak(minutes) {
+  closeStatusModal();
+  try {
+    const res = await fetch('/api/presence/extend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ minutes })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      myPresence = data.presence;
+      updateBreakModalTimer();
+      updateMyStatusUI();
+      updateBreakLockscreen();
+
+      // Notify chat about extension
+      const typeLabel = myPresence.status === 'lunch' ? 'ланч' : 'брейк';
+      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      socket.emit('msg', {
+        room: 'LUNCH_BREAK',
+        text: `⏱ ${user.name} продлил ${typeLabel} на ${minutes} мин (в ${now})`,
+        user: user.name
+      });
+    }
+  } catch(e) {
+    console.error('Extend failed', e);
+  }
+}
+
+// Listen for other users' presence updates
+socket.on('presenceUpdate', (data) => {
+  allPresence[data.username] = {
+    status: data.status,
+    since: data.since,
+    breakLog: data.breakLog || []
+  };
+  // If it's our own username, sync our local state
+  if (user && data.username === user.username) {
+    myPresence = allPresence[data.username];
+    updateMyStatusUI();
+    updateBreakLockscreen();
+  }
+});
+
+// Send heartbeat every 30s to keep "online" status alive
+setInterval(() => { socket.emit('heartbeat'); }, 30000);
+
+// Load initial presence state
+async function loadPresence() {
+  try {
+    const res = await fetch('/api/presence');
+    if (res.ok) {
+      allPresence = await res.json();
+      if (user && allPresence[user.username]) {
+        myPresence = allPresence[user.username];
+      }
+      updateMyStatusUI();
+      updateBreakLockscreen();
+    }
+  } catch(e) {}
+}
+
+/* ====================== PROFILE / LOGOUT ====================== */
+
+function goToProfilePage() {
+  window.open(`/u/${user.username}`, '_blank');
+}
+
+let isLoggingOut = false;
+
+async function logout() {
+  if (isLoggingOut) return;
+  isLoggingOut = true;
+  try { await fetch("/logout"); } catch(e) {}
+  window.location.replace("/login.html?loggedout=1");
+}
+
+// ---- Bootstrap (all variables are declared above) ----
+loadUser();
+loadUsersDirectory();
+loadTicketTypes();
+loadPresence();
+refreshBreakLimitsUI();
+startPresenceTimer();
+</script>
+
+<!-- BREAK / LUNCH LOCKSCREEN -->
+<div id="breakLockscreen" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(10,10,18,0.92); backdrop-filter:blur(8px); flex-direction:column; align-items:center; justify-content:center; gap:16px;">
+  <div style="font-size:52px" id="breakLockIcon">🍽</div>
+  <div style="font-size:22px; font-weight:700; color:var(--text)" id="breakLockTitle">Lunch break</div>
+  <div class="break-timer-big" id="breakLockTimer" style="font-size:56px; margin:0;">45:00</div>
+  <div style="font-size:13px; color:var(--muted)" id="breakLockSince"></div>
+  <ul class="break-log-list" id="breakLockLog" style="min-width:260px; max-width:340px;"></ul>
+  <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:8px;">
+    <button onclick="extendBreak(15)" class="status-btn" style="font-size:14px; padding:8px 18px;">+15 min</button>
+    <button onclick="addLunchFromBreak()" class="status-btn" id="breakLockAddLunch" style="font-size:14px; padding:8px 18px;">+Lunch 45 min</button>
+    <button onclick="confirmStatusChange('online')" style="font-size:14px; padding:8px 22px; border-radius:8px; border:none; background:#7be07b; color:#000; font-weight:700; cursor:pointer;">✅ I'm back</button>
+  </div>
+</div>
+
+</body>
+</html>

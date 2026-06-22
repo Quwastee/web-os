@@ -1,0 +1,11 @@
+{
+  "admin": {
+    "password": "$2b$10$R6bG3PpVYH.ASocozBNBseZWi6vas6aYS3wQgrH.QrC5763Al.RQy",
+    "name": "IT Admin",
+    "role": "admin",
+    "department": "IT",
+    "team": "Admin Staff",
+    "manager": null,
+    "avatar": null
+  }
+}
