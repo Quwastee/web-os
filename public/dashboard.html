@@ -1763,6 +1763,127 @@ mark.crm-hl { background:rgba(255,210,80,0.32); color:inherit; border-radius:3px
 .break-timer-big.warning { color:#e07a7a; }
 #breakLockscreen { color: var(--text); }
 
+/* ===== Telegram-style message actions: reply / forward / edit / select ===== */
+/* Quoted reply preview inside a bubble */
+.bubble-reply {
+  display: block;
+  border-left: 3px solid var(--accent, #6c8cff);
+  background: rgba(127,127,127,0.12);
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin-bottom: 5px;
+  font-size: 12.5px;
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+}
+.bubble-reply .bubble-reply-author { font-weight: 600; color: var(--accent, #6c8cff); display: block; }
+.bubble-reply .bubble-reply-text { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.bubble-fwd { display: block; font-size: 12px; color: var(--accent, #6c8cff); font-style: italic; margin-bottom: 4px; }
+.bubble-edited { opacity: 0.65; font-style: italic; margin-left: 4px; }
+.bubble-row.flash > .bubble-col .bubble { animation: bubbleFlash 1.1s ease; }
+@keyframes bubbleFlash {
+  0%, 100% { box-shadow: none; }
+  25% { box-shadow: 0 0 0 3px rgba(108,140,255,0.55); }
+}
+
+/* Reply / edit composer bar above the input */
+.compose-context-bar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+}
+.compose-context-bar.show { display: flex; }
+.compose-context-icon { font-size: 18px; flex-shrink: 0; }
+.compose-context-body { flex: 1; min-width: 0; border-left: 3px solid var(--accent, #6c8cff); padding-left: 8px; }
+.compose-context-title { font-weight: 600; font-size: 12.5px; color: var(--accent, #6c8cff); }
+.compose-context-text { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.compose-context-close {
+  background: transparent; border: none; color: var(--muted);
+  font-size: 18px; cursor: pointer; flex-shrink: 0; padding: 4px 6px; border-radius: 6px;
+}
+.compose-context-close:hover { background: var(--card); color: var(--text); }
+
+/* Multi-select mode */
+.bubble-row.selectable { cursor: pointer; }
+.bubble-row.selectable .bubble { cursor: pointer; }
+.msg-select-check {
+  display: none;
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid var(--muted);
+  flex-shrink: 0; align-self: center; margin: 0 6px;
+  align-items: center; justify-content: center;
+  font-size: 12px; color: #fff;
+}
+.bubble-row.selectable .msg-select-check { display: inline-flex; }
+.bubble-row.selected .msg-select-check { background: var(--accent, #6c8cff); border-color: var(--accent, #6c8cff); }
+.bubble-row.selected { background: rgba(108,140,255,0.10); border-radius: 10px; }
+
+/* Selection action bar (replaces chat header area) */
+.msg-select-bar {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.msg-select-bar.show { display: flex; }
+.msg-select-bar .sel-count { font-weight: 600; flex: 1; }
+.msg-select-bar .sel-btn {
+  background: transparent; border: none; color: var(--text);
+  font-size: 20px; cursor: pointer; padding: 6px 8px; border-radius: 8px;
+}
+.msg-select-bar .sel-btn:hover { background: var(--card); }
+.msg-select-bar .sel-btn.danger { color: #e8645f; }
+
+/* Forward picker modal */
+.fwd-modal-overlay {
+  position: fixed; inset: 0; z-index: 1100;
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(2px);
+  display: none; align-items: center; justify-content: center;
+}
+.fwd-modal-overlay.show { display: flex; }
+.fwd-modal {
+  width: 380px; max-width: calc(100vw - 32px); max-height: 70vh;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 14px; display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.45);
+}
+.fwd-modal-head { padding: 14px 16px; font-weight: 700; border-bottom: 1px solid var(--border); }
+.fwd-modal-search { margin: 10px 14px; }
+.fwd-modal-search input {
+  width: 100%; padding: 9px 12px; border-radius: 9px;
+  border: 1px solid var(--border); background: var(--card); color: var(--text);
+  font-family: inherit; font-size: 14px; box-sizing: border-box;
+}
+.fwd-modal-list { overflow-y: auto; padding: 4px 8px 12px; }
+.fwd-target {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 9px; cursor: pointer;
+}
+.fwd-target:hover { background: var(--card); }
+.fwd-target .fwd-target-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--card); font-size: 18px; flex-shrink: 0; overflow: hidden;
+}
+.fwd-target .fwd-target-icon img { width: 100%; height: 100%; object-fit: cover; }
+.fwd-target .fwd-target-name { font-weight: 500; }
+
+/* Lightweight toast */
+.app-toast {
+  position: fixed; left: 50%; bottom: 38px; transform: translateX(-50%) translateY(12px);
+  background: var(--panel); color: var(--text); border: 1px solid var(--border);
+  padding: 10px 18px; border-radius: 22px; font-size: 14px; z-index: 1200;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35); opacity: 0; transition: opacity .2s, transform .2s;
+  pointer-events: none;
+}
+.app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
 </style>
 </head>
 
@@ -1821,8 +1942,23 @@ mark.crm-hl { background:rgba(255,210,80,0.32); color:inherit; border-radius:3px
         <div class="dm-chat-placeholder" id="dmPlaceholder" data-i18n="dmSelectPrompt">Select a conversation or search for someone to start chatting.</div>
         <div id="dmChatActive" style="display:none; flex:1; flex-direction:column; min-width:0;">
           <div class="dm-chat-header" id="dmChatHeader"></div>
+          <div class="msg-select-bar" id="msgSelectBar">
+            <button class="sel-btn" id="selCancelBtn" title="Cancel">✕</button>
+            <span class="sel-count" id="selCountLabel">0</span>
+            <button class="sel-btn" id="selCopyBtn" title="Copy">📋</button>
+            <button class="sel-btn" id="selForwardBtn" title="Forward">↪️</button>
+            <button class="sel-btn danger" id="selDeleteBtn" title="Delete">🗑</button>
+          </div>
           <div class="messages" id="dmMessages" style="flex:1; overflow:auto; padding:20px;"></div>
           <div class="dm-readonly-banner" id="dmReadonlyBanner" style="display:none;" data-i18n="chatComingSoon">This chat is read-only for now — messaging will be enabled soon.</div>
+          <div class="compose-context-bar" id="composeContextBar">
+            <span class="compose-context-icon" id="composeContextIcon">↩️</span>
+            <div class="compose-context-body">
+              <div class="compose-context-title" id="composeContextTitle"></div>
+              <div class="compose-context-text" id="composeContextText"></div>
+            </div>
+            <button class="compose-context-close" id="composeContextClose" title="Cancel">✕</button>
+          </div>
           <div class="input" id="dmInputBar">
             <button class="attach-btn" id="dmAttachBtn" title="Attach file or photo">📎</button>
             <input type="file" id="dmFileInput" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.csv" style="display:none;">
@@ -1921,6 +2057,17 @@ mark.crm-hl { background:rgba(255,210,80,0.32); color:inherit; border-radius:3px
   </div>
 
 </div>
+
+<!-- FORWARD PICKER MODAL -->
+<div class="fwd-modal-overlay" id="fwdModalOverlay">
+  <div class="fwd-modal">
+    <div class="fwd-modal-head" id="fwdModalTitle">Forward to…</div>
+    <div class="fwd-modal-search"><input id="fwdModalSearch" placeholder="Search chats…"></div>
+    <div class="fwd-modal-list" id="fwdModalList"></div>
+  </div>
+</div>
+
+<div class="app-toast" id="appToast"></div>
 
 <!-- STATUS CONFIRM MODAL -->
 <div class="modal-overlay" id="statusConfirmModal">
@@ -2163,10 +2310,25 @@ function formatBubbleTime(timestamp) {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+// Cache of rendered messages for the open room, keyed by id, so message
+// actions (reply / forward / copy / edit) can look up the full message.
+let msgCache = {};
+
+// Telegram-style message-action state for the currently open chat.
+const chatState = {
+  replyingTo: null,   // { id, user, text }
+  editingMsg: null,   // { id, room }
+  selectionMode: false,
+  selected: new Map(),// msgId -> message object
+  forwardIds: null    // ids being forwarded while picker is open
+};
+
 function renderMessage(m, container) {
   const isOwn = m.user === user.name;
   const isAdmin = user.role === 'admin' || user.role === 'hos';
   const canDelete = m.id && (isOwn || isAdmin);
+
+  if (m.id) msgCache[m.id] = m;
 
   const prev = container.lastElementChild;
   const isGrouped = prev && prev.classList.contains("bubble-row") &&
@@ -2195,6 +2357,20 @@ function renderMessage(m, container) {
   bubble.style.position = "relative";
 
   let innerHtml = "";
+
+  // "Forwarded from" label (Telegram-style)
+  if (m.forwardedFrom) {
+    innerHtml += `<span class="bubble-fwd">↪ ${SafariPrefs.t("msgForwardedFrom")} ${escapeHtml(m.forwardedFrom)}</span>`;
+  }
+
+  // Quoted reply preview, clickable to jump to the original
+  if (m.replyTo && m.replyTo.id) {
+    const rt = m.replyTo;
+    innerHtml += `<span class="bubble-reply" data-reply-to="${escapeHtml(rt.id)}">` +
+      `<span class="bubble-reply-author">${escapeHtml(rt.user || "")}</span>` +
+      `<span class="bubble-reply-text">${escapeHtml(rt.text || "📎")}</span></span>`;
+  }
+
   if (m.text) innerHtml += `<span class="bubble-text">${escapeHtml(m.text)}</span>`;
 
   if (m.attachment && m.attachment.url) {
@@ -2207,18 +2383,27 @@ function renderMessage(m, container) {
     }
   }
 
-  innerHtml += `<span class="bubble-meta">${formatBubbleTime(m.timestamp)}</span>`;
+  const editedMark = m.edited ? `<span class="bubble-edited">${escapeHtml(SafariPrefs.t("msgEdited"))}</span>` : "";
+  innerHtml += `<span class="bubble-meta">${formatBubbleTime(m.timestamp)}${editedMark}</span>`;
   bubble.innerHTML = innerHtml;
 
-  if (canDelete) {
+  // Every message with an id can be acted on (reply/forward/copy/select).
+  if (m.id) {
     bubble.classList.add("ctx-enabled");
-    bubble.setAttribute("data-can-delete", "1");
+    bubble.setAttribute("data-msg-id", m.id);
+    bubble.setAttribute("data-can-act", "1");
+    bubble.setAttribute("data-can-delete", canDelete ? "1" : "0");
     bubble.setAttribute("data-is-own", isOwn ? "1" : "0");
     bubble.setAttribute("data-is-admin", isAdmin ? "1" : "0");
   }
 
   col.innerHTML = authorHtml;
   col.appendChild(bubble);
+
+  // Selection checkbox (only visible in selection mode via CSS)
+  const check = document.createElement("div");
+  check.className = "msg-select-check";
+  check.innerHTML = "✓";
 
   row.innerHTML = avatarHtmlStr;
   if (!isOwn && !isGrouped) {
@@ -2228,8 +2413,14 @@ function renderMessage(m, container) {
       av.addEventListener("click", () => openProfileByName(m.user));
     }
   }
-  row.appendChild(col);
+  if (isOwn) { row.appendChild(col); row.appendChild(check); }
+  else { row.appendChild(check); row.appendChild(col); }
   container.appendChild(row);
+
+  if (chatState.selectionMode) {
+    row.classList.add("selectable");
+    if (chatState.selected.has(m.id)) row.classList.add("selected");
+  }
 }
 
 /* ===== Telegram-style message context menu =====
@@ -2240,35 +2431,46 @@ function renderMessage(m, container) {
 
 let msgCtx = null; // { overlay, cloneWrap, menu, bubble, msgId }
 
-function buildMsgCtxMenu(isOwn, isAdmin) {
+function buildMsgCtxMenu(isOwn, isAdmin, canDelete, msg) {
   const menu = document.createElement("div");
   menu.className = "msg-ctx-menu";
 
-  const deleteLabel = (isAdmin && !isOwn)
-    ? SafariPrefs.t("msgDeleteAdmin")
-    : SafariPrefs.t("msgDeleteOwn");
-
-  const deleteItem = document.createElement("button");
-  deleteItem.className = "msg-ctx-item danger";
-  deleteItem.innerHTML = `<span class="msg-ctx-icon">🗑</span><span>${escapeHtml(deleteLabel)}</span>`;
-  deleteItem.onclick = (e) => {
-    e.stopPropagation();
-    const msgId = msgCtx ? msgCtx.msgId : null;
-    closeMsgContextMenu();
-    if (msgId) deleteMessage(msgId, currentDmRoom);
+  const addItem = (icon, label, handler, danger) => {
+    const item = document.createElement("button");
+    item.className = "msg-ctx-item" + (danger ? " danger" : "");
+    item.innerHTML = `<span class="msg-ctx-icon">${icon}</span><span>${escapeHtml(label)}</span>`;
+    item.onclick = (e) => {
+      e.stopPropagation();
+      const id = msgCtx ? msgCtx.msgId : null;
+      closeMsgContextMenu();
+      if (id) handler(id);
+    };
+    menu.appendChild(item);
   };
-  menu.appendChild(deleteItem);
+
+  const hasText = !!(msg && msg.text);
+
+  addItem("↩️", SafariPrefs.t("msgReply"), (id) => startReply(id));
+  if (hasText) addItem("📋", SafariPrefs.t("msgCopy"), (id) => copyMessage(id));
+  if (isOwn && hasText) addItem("✏️", SafariPrefs.t("msgEdit"), (id) => startEdit(id));
+  addItem("↪️", SafariPrefs.t("msgForward"), (id) => openForwardModal([id]));
+  addItem("☑️", SafariPrefs.t("msgSelect"), (id) => enterSelectionMode(id));
+  if (canDelete) {
+    const deleteLabel = (isAdmin && !isOwn) ? SafariPrefs.t("msgDeleteAdmin") : SafariPrefs.t("msgDeleteOwn");
+    addItem("🗑", deleteLabel, (id) => deleteMessage(id, currentDmRoom), true);
+  }
   return menu;
 }
 
 function openMsgContextMenu(bubble, clientX, clientY) {
-  if (bubble.getAttribute("data-can-delete") !== "1") return;
+  if (bubble.getAttribute("data-can-act") !== "1") return;
   closeMsgContextMenu();
 
   const msgId = bubble.closest("[data-msg-id]")?.getAttribute("data-msg-id");
   if (!msgId) return;
   const isOwn = bubble.getAttribute("data-is-own") === "1";
   const isAdmin = bubble.getAttribute("data-is-admin") === "1";
+  const canDelete = bubble.getAttribute("data-can-delete") === "1";
 
   const rect = bubble.getBoundingClientRect();
 
@@ -2289,14 +2491,15 @@ function openMsgContextMenu(bubble, clientX, clientY) {
   document.body.appendChild(cloneWrap);
 
   // Menu, positioned near the press point but kept on-screen
-  const menu = buildMsgCtxMenu(isOwn, isAdmin);
+  const menu = buildMsgCtxMenu(isOwn, isAdmin, canDelete, msgCache[msgId]);
   document.body.appendChild(menu);
-  const menuW = 210, menuH = 56;
+  const menuW = 210;
+  const menuH = menu.offsetHeight || 56;
   let menuLeft = Math.min(Math.max(8, rect.right - menuW), window.innerWidth - menuW - 8);
   let menuTop = rect.bottom + 10;
   let flip = false;
   if (menuTop + menuH > window.innerHeight - 8) {
-    menuTop = rect.top - menuH - 10;
+    menuTop = Math.max(8, rect.top - menuH - 10);
     flip = true;
   }
   menu.style.left = menuLeft + "px";
@@ -2358,11 +2561,12 @@ document.addEventListener("keydown", (e) => {
   }
 
   document.addEventListener("pointerdown", (e) => {
+    if (chatState.selectionMode) return; // taps toggle selection instead
     const box = getMessagesBox();
     if (!box || !box.contains(e.target)) return;
     if (e.button !== 0 && e.pointerType !== "touch") return; // only left-click drives long-press on mouse
     const bubble = e.target.closest(".bubble");
-    if (!bubble || bubble.getAttribute("data-can-delete") !== "1") return;
+    if (!bubble || bubble.getAttribute("data-can-act") !== "1") return;
 
     pressBubble = bubble;
     pressStart = { x: e.clientX, y: e.clientY };
@@ -2388,15 +2592,45 @@ document.addEventListener("keydown", (e) => {
 
   // Right-click on desktop opens it instantly, no hold needed.
   document.addEventListener("contextmenu", (e) => {
+    if (chatState.selectionMode) return;
     const box = getMessagesBox();
     if (!box || !box.contains(e.target)) return;
     const bubble = e.target.closest(".bubble");
-    if (!bubble || bubble.getAttribute("data-can-delete") !== "1") return;
+    if (!bubble || bubble.getAttribute("data-can-act") !== "1") return;
     e.preventDefault();
     clearPress();
     openMsgContextMenu(bubble, e.clientX, e.clientY);
   });
+
+  // Plain click: toggle selection (in selection mode) or jump to a quoted reply.
+  document.addEventListener("click", (e) => {
+    const box = getMessagesBox();
+    if (!box || !box.contains(e.target)) return;
+
+    if (chatState.selectionMode) {
+      const row = e.target.closest(".bubble-row[data-msg-id]");
+      if (row) { e.preventDefault(); toggleSelect(row.getAttribute("data-msg-id")); }
+      return;
+    }
+
+    const replyRef = e.target.closest(".bubble-reply");
+    if (replyRef) {
+      const targetId = replyRef.getAttribute("data-reply-to");
+      jumpToMessage(targetId);
+    }
+  });
 })();
+
+function jumpToMessage(msgId) {
+  if (!msgId) return;
+  const row = document.querySelector(`.bubble-row[data-msg-id="${msgId}"]`);
+  if (!row) return;
+  row.scrollIntoView({ behavior: "smooth", block: "center" });
+  row.classList.remove("flash");
+  void row.offsetWidth; // restart animation
+  row.classList.add("flash");
+  setTimeout(() => row.classList.remove("flash"), 1200);
+}
 
 async function deleteMessage(msgId, room) {
   if (!confirm(SafariPrefs.t("msgDeleteConfirm"))) return;
@@ -2415,11 +2649,29 @@ async function deleteMessage(msgId, room) {
 
 socket.on("msgDeleted", ({ room, msgId }) => {
   if (room === currentDmRoom) {
+    delete msgCache[msgId];
+    if (chatState.selected.has(msgId)) { chatState.selected.delete(msgId); updateSelectionBar(); }
     const el = document.querySelector(`[data-msg-id="${msgId}"]`);
     if (el) {
       if (msgCtx && el.contains(msgCtx.bubble)) closeMsgContextMenu();
       el.remove();
     }
+  }
+});
+
+socket.on("msgEdited", ({ room, msgId, text, edited }) => {
+  if (msgCache[msgId]) { msgCache[msgId].text = text; msgCache[msgId].edited = !!edited; }
+  if (room !== currentDmRoom) return;
+  const row = document.querySelector(`.bubble-row[data-msg-id="${msgId}"]`);
+  if (!row) return;
+  const textEl = row.querySelector(".bubble-text");
+  if (textEl) textEl.textContent = text;
+  const meta = row.querySelector(".bubble-meta");
+  if (meta && !meta.querySelector(".bubble-edited")) {
+    const mark = document.createElement("span");
+    mark.className = "bubble-edited";
+    mark.textContent = SafariPrefs.t("msgEdited");
+    meta.appendChild(mark);
   }
 });
 
@@ -2429,6 +2681,7 @@ socket.on("msgDeleted", ({ room, msgId }) => {
 socket.on("history", (msgs) => {
   if (lastHistoryRoom !== currentDmRoom) return;
   closeMsgContextMenu();
+  msgCache = {};
   const box = document.getElementById("dmMessages");
   box.innerHTML = "";
   msgs.forEach(m => renderMessage(m, box));
@@ -2475,6 +2728,308 @@ function joinRoom(room) {
   socket.emit("join", room);
   socket.emit("getHistory", room);
 }
+
+/* ============ Telegram-style message actions ============ */
+
+let _toastTimer = null;
+function showToast(text) {
+  const el = document.getElementById("appToast");
+  if (!el) return;
+  el.textContent = text;
+  el.classList.add("show");
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove("show"), 1800);
+}
+
+// Resets reply/edit/selection state — called whenever a chat is opened.
+function resetChatActions() {
+  cancelReply();
+  cancelEdit();
+  exitSelectionMode();
+}
+
+function snippetOf(m) {
+  if (!m) return "";
+  if (m.text) return m.text;
+  if (m.attachment) return "📎 " + (m.attachment.name || SafariPrefs.t("dmAttachment"));
+  return "";
+}
+
+/* ---- Copy ---- */
+async function copyMessage(msgId) {
+  const m = msgCache[msgId];
+  if (!m || !m.text) return;
+  await copyTextToClipboard(m.text);
+  showToast(SafariPrefs.t("msgCopied"));
+}
+
+async function copyTextToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (_) {}
+    ta.remove();
+  }
+}
+
+/* ---- Reply ---- */
+function startReply(msgId) {
+  const m = msgCache[msgId];
+  if (!m) return;
+  cancelEdit();
+  chatState.replyingTo = { id: m.id, user: m.user, text: snippetOf(m) };
+  showComposeContext("↩️", `${SafariPrefs.t("replyingToLabel")} ${m.user}`, snippetOf(m));
+  document.getElementById("dmMsgInput").focus();
+}
+function cancelReply() {
+  chatState.replyingTo = null;
+  if (!chatState.editingMsg) hideComposeContext();
+}
+
+/* ---- Edit ---- */
+function startEdit(msgId) {
+  const m = msgCache[msgId];
+  if (!m || m.user !== user.name) return;
+  cancelReply();
+  chatState.editingMsg = { id: m.id, room: currentDmRoom };
+  showComposeContext("✏️", SafariPrefs.t("editingLabel"), snippetOf(m));
+  const input = document.getElementById("dmMsgInput");
+  input.value = m.text || "";
+  input.focus();
+}
+function cancelEdit() {
+  if (chatState.editingMsg) {
+    const input = document.getElementById("dmMsgInput");
+    if (input) input.value = "";
+  }
+  chatState.editingMsg = null;
+  if (!chatState.replyingTo) hideComposeContext();
+}
+
+function showComposeContext(icon, title, text) {
+  document.getElementById("composeContextIcon").textContent = icon;
+  document.getElementById("composeContextTitle").textContent = title;
+  document.getElementById("composeContextText").textContent = text;
+  document.getElementById("composeContextBar").classList.add("show");
+}
+function hideComposeContext() {
+  document.getElementById("composeContextBar").classList.remove("show");
+}
+
+async function submitEdit(text) {
+  const ed = chatState.editingMsg;
+  if (!ed) return;
+  const trimmed = text.trim();
+  if (!trimmed) return;
+  try {
+    const res = await fetch("/api/chat/message/edit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ room: ed.room, msgId: ed.id, text: trimmed })
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      showStatusLimitError(d.error || "Не удалось изменить сообщение");
+      return;
+    }
+    cancelEdit();
+  } catch (e) {
+    showStatusLimitError("Ошибка сети — попробуй ещё раз");
+  }
+}
+
+// Sends the composer text, honoring reply/edit state. Returns true if handled.
+function sendComposerText(text) {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+  if (!currentDmRoom || !user.name) return false;
+
+  if (chatState.editingMsg) {
+    // submitEdit is async and clears the input via cancelEdit() only on success,
+    // so return false here to keep the typed text if the request fails.
+    submitEdit(trimmed);
+    return false;
+  }
+
+  const payload = { room: currentDmRoom, text: trimmed, user: user.name };
+  if (chatState.replyingTo) {
+    payload.replyTo = chatState.replyingTo;
+    cancelReply();
+  }
+  socket.emit("msg", payload);
+  return true;
+}
+
+/* ---- Forward ---- */
+function buildForwardTargets() {
+  const targets = [];
+  targets.push({ room: "GLOBAL", kind: "global", name: SafariPrefs.t("globalChat"), icon: "🌍" });
+  if (user.team) targets.push({ room: user.team, kind: "team", name: user.team, icon: "💬" });
+  targets.push({ room: "LUNCH_BREAK", kind: "lunch", name: SafariPrefs.t("lunchBreakChat"), icon: "🍔" });
+  dmThreadsCache.forEach(t => targets.push({ room: t.room, kind: "dm", name: t.name, avatar: t.avatar }));
+  dmDirectoryCache.forEach(u => {
+    if (!dmThreadsCache.some(t => t.username === u.username)) {
+      targets.push({ room: dmRoomIdFor(u.username), kind: "dm", name: u.name, avatar: u.avatar });
+    }
+  });
+  return targets;
+}
+
+function openForwardModal(ids) {
+  if (!ids || !ids.length) { showToast(SafariPrefs.t("nothingSelected")); return; }
+  chatState.forwardIds = ids.slice();
+  document.getElementById("fwdModalTitle").textContent = SafariPrefs.t("forwardTitle");
+  const search = document.getElementById("fwdModalSearch");
+  search.placeholder = SafariPrefs.t("forwardSearch");
+  search.value = "";
+  renderForwardTargets("");
+  document.getElementById("fwdModalOverlay").classList.add("show");
+  setTimeout(() => search.focus(), 50);
+}
+
+function closeForwardModal() {
+  document.getElementById("fwdModalOverlay").classList.remove("show");
+  chatState.forwardIds = null;
+}
+
+function renderForwardTargets(filter) {
+  const q = (filter || "").trim().toLowerCase();
+  const list = document.getElementById("fwdModalList");
+  const targets = buildForwardTargets().filter(t => !q || t.name.toLowerCase().includes(q));
+  list.innerHTML = targets.map((t, i) => {
+    const iconHtml = t.kind === "dm"
+      ? (t.avatar ? `<span class="fwd-target-icon"><img src="${t.avatar}" alt=""></span>` : `<span class="fwd-target-icon">${escapeHtml((t.name || "?").charAt(0).toUpperCase())}</span>`)
+      : `<span class="fwd-target-icon">${t.icon}</span>`;
+    return `<div class="fwd-target" data-idx="${i}">${iconHtml}<span class="fwd-target-name">${escapeHtml(t.name)}</span></div>`;
+  }).join("");
+  list._targets = targets;
+}
+
+function doForwardTo(target) {
+  const ids = chatState.forwardIds || [];
+  // Preserve chronological order when forwarding several at once.
+  const ordered = ids
+    .map(id => msgCache[id])
+    .filter(Boolean)
+    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+  ordered.forEach(m => {
+    const payload = {
+      room: target.room,
+      user: user.name,
+      text: m.text || "",
+      forwardedFrom: m.forwardedFrom || m.user
+    };
+    if (m.attachment) payload.attachment = m.attachment;
+    socket.emit("msg", payload);
+  });
+  closeForwardModal();
+  if (chatState.selectionMode) exitSelectionMode();
+  showToast(SafariPrefs.t("msgForwarded"));
+}
+
+/* ---- Multi-select ---- */
+function enterSelectionMode(initialId) {
+  chatState.selectionMode = true;
+  chatState.selected.clear();
+  document.getElementById("dmMessages").querySelectorAll(".bubble-row[data-msg-id]").forEach(r => r.classList.add("selectable"));
+  document.getElementById("msgSelectBar").classList.add("show");
+  if (initialId) toggleSelect(initialId);
+  else updateSelectionBar();
+}
+
+function exitSelectionMode() {
+  chatState.selectionMode = false;
+  chatState.selected.clear();
+  const box = document.getElementById("dmMessages");
+  if (box) box.querySelectorAll(".bubble-row").forEach(r => r.classList.remove("selectable", "selected"));
+  const bar = document.getElementById("msgSelectBar");
+  if (bar) bar.classList.remove("show");
+}
+
+function toggleSelect(msgId) {
+  if (!msgId) return;
+  const row = document.querySelector(`.bubble-row[data-msg-id="${msgId}"]`);
+  if (chatState.selected.has(msgId)) {
+    chatState.selected.delete(msgId);
+    if (row) row.classList.remove("selected");
+  } else {
+    const m = msgCache[msgId];
+    if (!m) return;
+    chatState.selected.set(msgId, m);
+    if (row) row.classList.add("selected");
+  }
+  updateSelectionBar();
+}
+
+function updateSelectionBar() {
+  const n = chatState.selected.size;
+  document.getElementById("selCountLabel").textContent = `${n} ${SafariPrefs.t("selectedCount")}`;
+  // Delete is only offered when every selected message is deletable by the user.
+  const allDeletable = [...chatState.selected.values()].every(m => {
+    const isOwn = m.user === user.name;
+    const isAdmin = user.role === "admin" || user.role === "hos";
+    return isOwn || isAdmin;
+  });
+  document.getElementById("selDeleteBtn").style.display = (n > 0 && allDeletable) ? "" : "none";
+}
+
+async function deleteSelected() {
+  if (!chatState.selected.size) return;
+  if (!confirm(SafariPrefs.t("deleteSelectedConfirm"))) return;
+  const ids = [...chatState.selected.keys()];
+  const room = currentDmRoom;
+  for (const id of ids) {
+    try {
+      await fetch("/api/chat/message", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ room, msgId: id })
+      });
+    } catch (e) { /* server broadcasts removal; ignore individual failures */ }
+  }
+  exitSelectionMode();
+}
+
+function copySelected() {
+  const ordered = [...chatState.selected.values()]
+    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
+    .map(m => m.text)
+    .filter(Boolean);
+  if (!ordered.length) { showToast(SafariPrefs.t("nothingSelected")); return; }
+  copyTextToClipboard(ordered.join("\n"));
+  showToast(SafariPrefs.t("msgCopied"));
+  exitSelectionMode();
+}
+
+/* ---- Wiring for the action UI ---- */
+document.getElementById("composeContextClose").addEventListener("click", () => { cancelReply(); cancelEdit(); });
+document.getElementById("selCancelBtn").addEventListener("click", exitSelectionMode);
+document.getElementById("selCopyBtn").addEventListener("click", copySelected);
+document.getElementById("selForwardBtn").addEventListener("click", () => openForwardModal([...chatState.selected.keys()]));
+document.getElementById("selDeleteBtn").addEventListener("click", deleteSelected);
+document.getElementById("fwdModalOverlay").addEventListener("click", (e) => {
+  if (e.target.id === "fwdModalOverlay") closeForwardModal();
+});
+document.getElementById("fwdModalSearch").addEventListener("input", (e) => renderForwardTargets(e.target.value));
+document.getElementById("fwdModalList").addEventListener("click", (e) => {
+  const item = e.target.closest(".fwd-target");
+  if (!item) return;
+  const list = document.getElementById("fwdModalList");
+  const target = list._targets && list._targets[parseInt(item.getAttribute("data-idx"), 10)];
+  if (target) doForwardTo(target);
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if (document.getElementById("fwdModalOverlay").classList.contains("show")) { closeForwardModal(); return; }
+  if (chatState.editingMsg || chatState.replyingTo) { cancelReply(); cancelEdit(); return; }
+  if (chatState.selectionMode) { exitSelectionMode(); }
+});
 
 /* ====================== UNIFIED CHATS LIST ====================== */
 // Pinned rooms (Global + Team) always sit at the top of the chat list,
@@ -2686,6 +3241,7 @@ function openPinnedRoom(room, kind) {
   if (kind === "global" && room !== "GLOBAL") return;
   if (kind === "lunch" && room !== "LUNCH_BREAK") return;
 
+  resetChatActions();
   currentDmRoom = room;
   currentDmUser = null;
   lastHistoryRoom = room;
@@ -2720,6 +3276,7 @@ function openPinnedRoom(room, kind) {
 }
 
 function openDmThread(username, name, avatar) {
+  resetChatActions();
   currentDmRoom = dmRoomIdFor(username);
   currentDmUser = { username, name, avatar };
   lastHistoryRoom = currentDmRoom;
@@ -2754,15 +3311,7 @@ attachEmojiPicker(document.getElementById("dmEmojiBtn"), document.getElementById
 document.getElementById("dmMsgInput").addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     if (!e.target.value.trim()) return;
-    if (!currentDmRoom || !user.name) return;
-
-    socket.emit("msg", {
-      room: currentDmRoom,
-      text: e.target.value,
-      user: user.name
-    });
-
-    e.target.value = "";
+    if (sendComposerText(e.target.value)) e.target.value = "";
   }
 });
 
@@ -2790,12 +3339,12 @@ dmFileInput.addEventListener("change", async () => {
       return;
     }
 
-    socket.emit("msg", {
-      room: currentDmRoom,
-      text: "",
-      user: user.name,
-      attachment: data
-    });
+    const payload = { room: currentDmRoom, text: "", user: user.name, attachment: data };
+    if (chatState.replyingTo) {
+      payload.replyTo = chatState.replyingTo;
+      cancelReply();
+    }
+    socket.emit("msg", payload);
   } catch (e) {
     alert(SafariPrefs.t("uploadFailed"));
   } finally {
@@ -2877,7 +3426,12 @@ function makeVoiceRecorder(btnId, getRoomFn) {
           const res = await fetch("/api/upload", { method: "POST", body: formData });
           const data = await res.json();
           if (!res.ok) { alert(data.error || "Upload failed"); return; }
-          socket.emit("msg", { room, text: "", user: user.name, attachment: data });
+          const payload = { room, text: "", user: user.name, attachment: data };
+          if (chatState.replyingTo && room === currentDmRoom) {
+            payload.replyTo = chatState.replyingTo;
+            cancelReply();
+          }
+          socket.emit("msg", payload);
         } catch (err) {
           alert("Failed to send voice message");
         } finally {

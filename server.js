@@ -1354,11 +1354,14 @@ io.on("connection", (socket) => {
             mime: String(data.attachment.mime || "")
           }
         : null,
+      replyTo: sanitizeReplyTo(data.replyTo),
+      forwardedFrom: data.forwardedFrom ? String(data.forwardedFrom).slice(0, 120) : null,
       timestamp: Date.now()
     };
 
     pushHistory(data.room, msg);
-    io.to(data.room).emit("msg", msg);
+    // Include `room` so clients can gate live rendering to the open thread.
+    io.to(data.room).emit("msg", { ...msg, room: data.room });
   });
 });
 
@@ -1371,6 +1374,51 @@ io.on("connection", (socket) => {
 function makeId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
+
+// Normalises a client-supplied "reply to" reference into a small, safe quote
+// preview that travels with the message (id + author + short text snippet).
+function sanitizeReplyTo(replyTo) {
+  if (!replyTo || typeof replyTo !== 'object' || !replyTo.id) return null;
+  return {
+    id: String(replyTo.id),
+    user: replyTo.user ? String(replyTo.user).slice(0, 120) : '',
+    text: replyTo.text ? String(replyTo.text).slice(0, 160) : ''
+  };
+}
+
+// REST: POST /api/chat/message/edit  { room, msgId, text }
+// Telegram-style: only the author can edit their own message text.
+app.post('/api/chat/message/edit', authMiddleware, (req, res) => {
+  const { room, msgId, text } = req.body || {};
+  if (!room || !msgId || typeof text !== 'string') {
+    return res.status(400).json({ error: 'room, msgId and text required' });
+  }
+  const trimmed = text.trim();
+  if (!trimmed) return res.status(400).json({ error: 'Текст не может быть пустым' });
+
+  if (room.startsWith(DM_ROOM_PREFIX) && !dmOtherParticipant(room, req.username)) {
+    return res.status(403).json({ error: 'Нет доступа к этому чату' });
+  }
+
+  const history = chatHistory[room];
+  if (!history) return res.status(404).json({ error: 'Room not found' });
+
+  const msg = history.find((m) => m.id === msgId);
+  if (!msg) return res.status(404).json({ error: 'Message not found' });
+
+  const requester = users[req.username];
+  if (msg.user !== requester?.name) {
+    return res.status(403).json({ error: 'Можно редактировать только свои сообщения' });
+  }
+
+  msg.text = trimmed.slice(0, 2000);
+  msg.edited = true;
+  msg.editedAt = Date.now();
+  persistHistory();
+
+  io.to(room).emit('msgEdited', { room, msgId, text: msg.text, edited: true });
+  res.json({ ok: true });
+});
 
 // REST: DELETE /api/chat/message  { room, msgId }
 // Admins/HOS can delete any message; others can only delete their own.
