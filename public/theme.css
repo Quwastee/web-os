@@ -1,0 +1,369 @@
+/* =========================================================
+   Safari Office — shared theme variables & prefs widget
+   ========================================================= */
+
+:root {
+  --bg:#0b0b0f;
+  --panel:#15151a;
+  --card:#1e1e26;
+  --text:#fff;
+  --muted:#9a9a9a;
+  --input:rgba(255,255,255,0.08);
+  --button:#fff;
+  --buttonText:#000;
+  --border:#2a2a33;
+  --accent:#5a5aff;
+}
+
+body.light {
+  /* Warm-white: clean paper feel with a faint indigo tint */
+  --bg: #f0f2f8;
+  --panel: #ffffff;
+  --card: #e8eaf2;
+  --text: #0f0f1a;
+  --muted: #5e5e72;
+  --input: rgba(15,15,40,0.07);
+  --button: #1a1a3a;
+  --buttonText: #ffffff;
+  --border: #d0d2e0;
+  --accent: #4b4bdb;
+}
+
+body.gray {
+  /* Cool-slate: muted dark with purple undertones */
+  --bg: #18181f;
+  --panel: #21212b;
+  --card: #29293a;
+  --text: #e8e8f5;
+  --muted: #9090b0;
+  --input: rgba(200,200,255,0.09);
+  --button: #d0d0f0;
+  --buttonText: #0e0e1a;
+  --border: #38384e;
+  --accent: #8080ff;
+}
+
+.safari-prefs {
+  position: relative;
+  display: flex;
+  gap: 10px;
+}
+
+.safari-prefs .icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: var(--card);
+  color: var(--text);
+  font-size: 16px;
+  backdrop-filter: blur(15px);
+  /* Prevent any inherited opacity / visibility rules from hiding the icon */
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: background 0.15s, transform 0.1s;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.safari-prefs .icon-btn:hover {
+  background: var(--border);
+  /* Never hide the icon on hover — some older resets zero out opacity */
+  opacity: 1 !important;
+  transform: scale(1.08);
+}
+
+.safari-prefs .lang-menu {
+  position: absolute;
+  top: 46px;
+  right: 0;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--card);
+  padding: 10px;
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  z-index: 50;
+  min-width: 160px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+
+.safari-prefs .lang-menu button {
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.safari-prefs .lang-menu button:hover {
+  background: var(--border);
+}
+
+/* =========================================================
+   Telegram-style chat bubbles (shared across dashboard / user)
+   ========================================================= */
+
+.bubble-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  margin-bottom: 2px;
+  max-width: 100%;
+}
+
+.bubble-row.own {
+  flex-direction: row-reverse;
+}
+
+.bubble-row .bubble-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #3a3a45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  visibility: visible;
+}
+
+.bubble-row .bubble-avatar.spacer {
+  visibility: hidden;
+}
+
+.bubble-col {
+  display: flex;
+  flex-direction: column;
+  max-width: 72%;
+  min-width: 0;
+}
+
+.bubble-row.own .bubble-col {
+  align-items: flex-end;
+}
+
+.bubble-row.other .bubble-col {
+  align-items: flex-start;
+}
+
+.bubble-author {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0 4px 2px;
+}
+
+.bubble {
+  position: relative;
+  padding: 8px 12px 7px;
+  border-radius: 18px;
+  font-size: 14.5px;
+  line-height: 1.35;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.08);
+}
+
+.bubble-row.own .bubble {
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 5px;
+}
+
+.bubble-row.other .bubble {
+  background: var(--card);
+  color: var(--text);
+  border-bottom-left-radius: 5px;
+}
+
+.bubble-row.grouped .bubble-col .bubble {
+  margin-top: 2px;
+}
+
+.bubble-row.no-avatar .bubble-col {
+  max-width: 88%;
+}
+
+.bubble-row.own.tail .bubble { border-bottom-right-radius: 18px; }
+.bubble-row.other.tail .bubble { border-bottom-left-radius: 18px; }
+
+.bubble-text {
+  white-space: pre-wrap;
+}
+
+.bubble-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  float: right;
+  margin: 4px -2px -2px 8px;
+  font-size: 11px;
+  opacity: 0.7;
+  user-select: none;
+  transform: translateY(2px);
+}
+
+.bubble-row.own .bubble-meta { color: rgba(255,255,255,0.85); }
+.bubble-row.other .bubble-meta { color: var(--muted); }
+
+.bubble-img {
+  max-width: 260px;
+  border-radius: 14px;
+  display: block;
+  cursor: pointer;
+}
+
+.bubble .msg-img { margin-top: 0; }
+
+.bubble-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.bubble-row.own .bubble-file { background: rgba(255,255,255,0.18); color: #fff; }
+.bubble-row.other .bubble-file { background: rgba(0,0,0,0.12); color: var(--text); }
+body.light .bubble-row.other .bubble-file { background: rgba(0,0,0,0.06); }
+
+.day-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 14px 0;
+}
+
+.day-divider span {
+  background: var(--card);
+  color: var(--muted);
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+/* =========================================================
+   iOS-style emoji picker
+   ========================================================= */
+
+.emoji-btn {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 19px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.emoji-btn:hover { background: var(--border); }
+.emoji-btn.active { background: var(--accent); }
+
+.emoji-picker {
+  position: absolute;
+  width: 320px;
+  height: 360px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.4);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 200;
+  backdrop-filter: blur(20px);
+}
+
+.emoji-picker.open { display: flex; }
+
+.emoji-picker-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.emoji-picker-tabs button {
+  flex: 1;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 17px;
+  padding: 9px 0;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.emoji-picker-tabs button:hover { background: var(--card); }
+.emoji-picker-tabs button.active {
+  color: var(--text);
+  border-bottom: 2px solid var(--accent);
+}
+
+.emoji-picker-search {
+  flex-shrink: 0;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.emoji-picker-search input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: var(--input);
+  color: var(--text);
+  padding: 7px 10px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.emoji-picker-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 8px;
+}
+
+.emoji-picker-category-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 8px 4px 4px;
+}
+
+.emoji-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.emoji-picker-grid button {
+  border: none;
+  background: none;
+  font-size: 22px;
+  padding: 5px 0;
+  cursor: pointer;
+  border-radius: 8px;
+  line-height: 1;
+}
+
+.emoji-picker-grid button:hover { background: var(--card); }
+
+@media (max-width: 480px) {
+  .emoji-picker { width: 280px; }
+}

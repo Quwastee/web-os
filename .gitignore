@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Local Python virtualenv (not part of the app)
+.venv/
+
+# Environment / secrets — never commit real tokens or credentials
+.env
+.env.local
+
+# Runtime data (contains user records, password hashes, sessions, chat history)
+data/*.json
+# ...but keep example/seed files that ship with the repo
+!data/*.example.json
+
+# User-uploaded files (avatars, chat & ticket attachments) — keep the empty
+# directory structure, ignore the uploaded files themselves.
+public/uploads/*
+!public/uploads/.gitkeep
+!public/uploads/avatars
+!public/uploads/tickets
+public/uploads/avatars/*
+!public/uploads/avatars/.gitkeep
+public/uploads/tickets/*
+!public/uploads/tickets/.gitkeep
+
+# OS / editor junk
+.DS_Store
+__MACOSX/
+*.log
