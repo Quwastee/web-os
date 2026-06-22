@@ -1358,7 +1358,9 @@ io.on("connection", (socket) => {
     };
 
     pushHistory(data.room, msg);
-    io.to(data.room).emit("msg", msg);
+    // Include the room so clients can tell which open conversation the message
+    // belongs to; the stored history copy stays room-less (keyed by room).
+    io.to(data.room).emit("msg", { ...msg, room: data.room });
   });
 });
 
