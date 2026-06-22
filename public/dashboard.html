@@ -4255,6 +4255,8 @@ async function saveTicketStatus(ticketId) {
 
 let myPresence = { status: 'online', since: Date.now(), breakLog: [] };
 let pendingStatus = null;
+let statusChangeInFlight = false; // guards against double-clicks / double-submits
+let extendInFlight = false;
 let breakTimerInterval = null;
 let allPresence = {}; // username -> presence
 
@@ -4387,42 +4389,43 @@ async function openStatusMenuModal() {
   modal.classList.add('show');
 
   // Always fetch fresh limits from server
-  let lim = { break: { remaining: 99, limit: 3, used: 0 }, lunch: { remaining: 1, limit: 1, used: 0, cooldownUntil: null } };
+  let lim = {
+    break: { remaining: 3, limit: 3, used: 0, allowed: true, cooldownUntil: null, reason: null },
+    lunch: { remaining: 1, limit: 1, used: 0, allowed: true, cooldownUntil: null, reason: null }
+  };
   try {
     const r = await fetch('/api/presence/limits');
     if (r.ok) { lim = await r.json(); window._breakLimits = lim; }
   } catch(e) {}
 
-  const breakLeft = lim.break.remaining;
-  const lunchLeft = lim.lunch.remaining;
-  const cooldownUntil = lim.lunch.cooldownUntil;
-
-  const breakDisabled = breakLeft <= 0;
-  const lunchCooldown = cooldownUntil && cooldownUntil > Date.now();
-  const lunchDisabled = lunchLeft <= 0 || lunchCooldown;
+  const minsUntil = (ts) => Math.max(1, Math.ceil((ts - Date.now()) / 60000));
+  const breakDisabled = !lim.break.allowed;
+  const lunchDisabled = !lim.lunch.allowed;
 
   // Break button label
   let breakLabel, breakColor;
-  if (breakDisabled) {
-    breakLabel = lim.lunch.used > 0 ? '☕ Break (после ланча — 1 брейк)' : '☕ Break (лимит исчерпан)';
-    breakColor = 'var(--muted)';
-  } else {
-    breakLabel = `☕ Break (15 мин) — осталось: ${breakLeft}`;
+  if (lim.break.allowed) {
+    breakLabel = `☕ Break (15 мин) — осталось: ${lim.break.remaining}`;
     breakColor = 'var(--text)';
+  } else if (lim.break.cooldownUntil) {
+    breakLabel = `☕ Break (подожди ${minsUntil(lim.break.cooldownUntil)} мин)`;
+    breakColor = '#e0a050';
+  } else {
+    breakLabel = '☕ Break (лимит исчерпан)';
+    breakColor = 'var(--muted)';
   }
 
   // Lunch button label
   let lunchLabel, lunchColor;
-  if (lunchLeft <= 0) {
-    lunchLabel = '🍽 Lunch (уже использован)';
-    lunchColor = 'var(--muted)';
-  } else if (lunchCooldown) {
-    const minsLeft = Math.ceil((cooldownUntil - Date.now()) / 60000);
-    lunchLabel = `🍽 Lunch (подожди ${minsLeft} мин)`;
-    lunchColor = '#e0a050';
-  } else {
+  if (lim.lunch.allowed) {
     lunchLabel = '🍽 Lunch (45 мин)';
     lunchColor = 'var(--text)';
+  } else if (lim.lunch.cooldownUntil) {
+    lunchLabel = `🍽 Lunch (подожди ${minsUntil(lim.lunch.cooldownUntil)} мин)`;
+    lunchColor = '#e0a050';
+  } else {
+    lunchLabel = '🍽 Lunch (уже использован)';
+    lunchColor = 'var(--muted)';
   }
 
   const btnBase = 'background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 16px;';
@@ -4511,7 +4514,12 @@ function closeStatusModal() {
 }
 
 async function confirmStatusChange(status) {
+  if (statusChangeInFlight) return; // ignore rapid double-clicks
+  statusChangeInFlight = true;
+  const yesBtn = document.getElementById('statusConfirmYes');
+  if (yesBtn) { yesBtn.disabled = true; yesBtn.style.opacity = '0.6'; yesBtn.style.cursor = 'wait'; }
   closeStatusModal();
+  const prevStatus = myPresence.status;
   try {
     const res = await fetch('/api/presence/status', {
       method: 'POST',
@@ -4520,15 +4528,16 @@ async function confirmStatusChange(status) {
     });
     const data = await res.json();
     if (res.ok) {
-      const prevStatus = myPresence.status;
       myPresence = data.presence;
       updateMyStatusUI();
       updateBreakLockscreen();
       refreshBreakLimitsUI();
 
-      // Send notification to GLOBAL chat
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      // A duplicate (no-op) request must not post a second chat message.
+      if (data.duplicate) return;
+
+      // Send notification to the Lunch + Break chat
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       let chatMsg = null;
 
       if (status === 'lunch') {
@@ -4548,12 +4557,14 @@ async function confirmStatusChange(status) {
         });
       }
     } else {
-      // Show limit error to agent
-      const errMsg = data.error || 'Не удалось сменить статус';
-      showStatusLimitError(errMsg);
+      // Show limit/cooldown error to agent
+      showStatusLimitError(data.error || 'Не удалось сменить статус');
     }
   } catch(e) {
     console.error('Status change failed', e);
+    showStatusLimitError('Ошибка сети — попробуй ещё раз');
+  } finally {
+    statusChangeInFlight = false;
   }
 }
 
@@ -4590,13 +4601,8 @@ async function addLunchFromBreak() {
     if (r.ok) {
       const lim = await r.json();
       window._breakLimits = lim;
-      if (lim.lunch.remaining <= 0) {
-        showStatusLimitError('Лимит ланча исчерпан — максимум 1 ланч в день');
-        return;
-      }
-      if (lim.lunch.cooldownUntil && lim.lunch.cooldownUntil > Date.now()) {
-        const minsLeft = Math.ceil((lim.lunch.cooldownUntil - Date.now()) / 60000);
-        showStatusLimitError(`Ланч недоступен — подожди ещё ${minsLeft} мин после 2 брейков`);
+      if (!lim.lunch.allowed) {
+        showStatusLimitError(lim.lunch.reason || 'Ланч сейчас недоступен');
         return;
       }
     }
@@ -4621,6 +4627,8 @@ function extendBreak(minutes) {
 }
 
 async function doExtendBreak(minutes) {
+  if (extendInFlight) return; // ignore rapid double-clicks
+  extendInFlight = true;
   closeStatusModal();
   try {
     const res = await fetch('/api/presence/extend', {
@@ -4643,9 +4651,15 @@ async function doExtendBreak(minutes) {
         text: `⏱ ${user.name} продлил ${typeLabel} на ${minutes} мин (в ${now})`,
         user: user.name
       });
+    } else {
+      const data = await res.json().catch(() => ({}));
+      showStatusLimitError(data.error || 'Не удалось продлить');
     }
   } catch(e) {
     console.error('Extend failed', e);
+    showStatusLimitError('Ошибка сети — попробуй ещё раз');
+  } finally {
+    extendInFlight = false;
   }
 }
 

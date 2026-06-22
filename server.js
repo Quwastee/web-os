@@ -9,6 +9,7 @@ const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
 const { setupTelegramBot } = require("./telegram");
+const { DAILY_BREAK_LIMIT, DAILY_LUNCH_LIMIT, getDailyBreakStats } = require("./break-limits");
 const { ALL_TYPES: TICKET_TYPE_VALUES, DEPARTMENTS: TICKET_DEPARTMENTS } = require("./ticket-types");
 
 const app = express();
@@ -1082,52 +1083,6 @@ function broadcastPresence(username) {
   });
 }
 
-// Daily break/lunch limits per agent
-const DAILY_BREAK_LIMIT = 3;   // max 3 breaks per day
-const DAILY_LUNCH_LIMIT = 1;   // max 1 lunch per day
-const LUNCH_COOLDOWN_MS = 30 * 60 * 1000; // 30 min cooldown after 2+ breaks
-
-// Returns stats for today's entries + any active cooldown info
-function getDailyBreakStats(breakLog) {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayTs = todayStart.getTime();
-  const now = Date.now();
-
-  let breakCount = 0;
-  let lunchCount = 0;
-  let lastBreakEndTs = null; // when did the most recent break end (or start if still active)
-
-  for (const entry of (breakLog || [])) {
-    if (entry.start < todayTs) continue;
-    if (entry.type === 'break') {
-      breakCount++;
-      const endTs = entry.end || entry.start; // if active, use start as conservative anchor
-      if (lastBreakEndTs === null || endTs > lastBreakEndTs) lastBreakEndTs = endTs;
-    } else if (entry.type === 'lunch') {
-      lunchCount++;
-    }
-  }
-
-  // Lunch cooldown: if agent has taken 2+ breaks, lunch blocked for 30 min after last break
-  let lunchCooldownUntil = null;
-  if (breakCount >= 2 && lunchCount === 0 && lastBreakEndTs !== null) {
-    const cooldownEnd = lastBreakEndTs + LUNCH_COOLDOWN_MS;
-    if (cooldownEnd > now) lunchCooldownUntil = cooldownEnd;
-  }
-
-  // If lunch taken, only 1 break allowed total
-  const breakLimit = lunchCount > 0 ? 1 : DAILY_BREAK_LIMIT;
-
-  return { breakCount, lunchCount, lunchCooldownUntil, breakLimit };
-}
-
-// Kept for backward compat
-function getDailyBreakCounts(breakLog) {
-  const s = getDailyBreakStats(breakLog);
-  return { breakCount: s.breakCount, lunchCount: s.lunchCount };
-}
-
 // REST endpoint to change own status
 app.post('/api/presence/status', authMiddleware, (req, res) => {
   const { status, extraMinutes } = req.body || {};
@@ -1139,31 +1094,38 @@ app.post('/api/presence/status', authMiddleware, (req, res) => {
   const current = presenceMap[username] || { status: 'offline', since: Date.now(), breakLog: [] };
   const now = Date.now();
 
-  // Enforce daily limits before starting a new break/lunch
-  if (status === 'break' || status === 'lunch') {
-    const { breakCount, lunchCount, lunchCooldownUntil, breakLimit } = getDailyBreakStats(current.breakLog);
+  // Idempotency guard: a duplicate request to enter the break/lunch the user is
+  // already on (e.g. a double-click) must not open a second log entry or
+  // consume another allowance. Treat it as a no-op success.
+  if ((status === 'break' || status === 'lunch') && current.status === status) {
+    const lastEntry = current.breakLog && current.breakLog[current.breakLog.length - 1];
+    if (lastEntry && !lastEntry.end && lastEntry.type === status) {
+      return res.json({ ok: true, duplicate: true, presence: getPresence(username) });
+    }
+  }
 
-    if (status === 'break' && breakCount >= breakLimit) {
-      const reason = lunchCount > 0
-        ? 'После ланча доступен только 1 брейк'
-        : `Лимит брейков исчерпан — максимум ${DAILY_BREAK_LIMIT} брейка в день`;
-      return res.status(400).json({ error: reason, code: 'BREAK_LIMIT_REACHED', used: breakCount, limit: breakLimit });
+  // Enforce daily limits / cooldown before starting a new break/lunch
+  if (status === 'break' || status === 'lunch') {
+    const stats = getDailyBreakStats(current.breakLog);
+
+    if (status === 'break' && !stats.breakAllowed) {
+      return res.status(400).json({
+        error: stats.breakReason || 'Брейк недоступен',
+        code: 'BREAK_NOT_ALLOWED',
+        used: stats.breakCount,
+        limit: DAILY_BREAK_LIMIT,
+        cooldownUntil: stats.breakCooldownUntil || null
+      });
     }
 
-    if (status === 'lunch') {
-      if (lunchCount >= DAILY_LUNCH_LIMIT) {
-        return res.status(400).json({
-          error: 'Лимит ланча исчерпан — максимум 1 ланч в день',
-          code: 'LUNCH_LIMIT_REACHED', used: lunchCount, limit: DAILY_LUNCH_LIMIT
-        });
-      }
-      if (lunchCooldownUntil) {
-        const minsLeft = Math.ceil((lunchCooldownUntil - Date.now()) / 60000);
-        return res.status(400).json({
-          error: `Ланч недоступен — подожди ещё ${minsLeft} мин после 2 брейков`,
-          code: 'LUNCH_COOLDOWN', cooldownUntil: lunchCooldownUntil
-        });
-      }
+    if (status === 'lunch' && !stats.lunchAllowed) {
+      return res.status(400).json({
+        error: stats.lunchReason || 'Ланч недоступен',
+        code: 'LUNCH_NOT_ALLOWED',
+        used: stats.lunchCount,
+        limit: DAILY_LUNCH_LIMIT,
+        cooldownUntil: stats.lunchCooldownUntil || null
+      });
     }
   }
 
@@ -1232,14 +1194,23 @@ app.get('/api/presence', authMiddleware, (req, res) => {
 // Get remaining break/lunch allowance for current user today
 app.get('/api/presence/limits', authMiddleware, (req, res) => {
   const current = presenceMap[req.username];
-  const { breakCount, lunchCount, lunchCooldownUntil, breakLimit } = getDailyBreakStats(current?.breakLog);
+  const s = getDailyBreakStats(current?.breakLog);
   res.json({
-    break: { used: breakCount, limit: breakLimit, remaining: Math.max(0, breakLimit - breakCount) },
+    break: {
+      used: s.breakCount,
+      limit: DAILY_BREAK_LIMIT,
+      remaining: s.breakRemaining,
+      allowed: s.breakAllowed,
+      cooldownUntil: s.breakCooldownUntil || null,
+      reason: s.breakReason || null
+    },
     lunch: {
-      used: lunchCount,
+      used: s.lunchCount,
       limit: DAILY_LUNCH_LIMIT,
-      remaining: Math.max(0, DAILY_LUNCH_LIMIT - lunchCount),
-      cooldownUntil: lunchCooldownUntil || null
+      remaining: s.lunchRemaining,
+      allowed: s.lunchAllowed,
+      cooldownUntil: s.lunchCooldownUntil || null,
+      reason: s.lunchReason || null
     }
   });
 });
