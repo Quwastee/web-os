@@ -2851,8 +2851,10 @@ function sendComposerText(text) {
   if (!currentDmRoom || !user.name) return false;
 
   if (chatState.editingMsg) {
+    // submitEdit is async and clears the input via cancelEdit() only on success,
+    // so return false here to keep the typed text if the request fails.
     submitEdit(trimmed);
-    return true;
+    return false;
   }
 
   const payload = { room: currentDmRoom, text: trimmed, user: user.name };
@@ -3337,12 +3339,12 @@ dmFileInput.addEventListener("change", async () => {
       return;
     }
 
-    socket.emit("msg", {
-      room: currentDmRoom,
-      text: "",
-      user: user.name,
-      attachment: data
-    });
+    const payload = { room: currentDmRoom, text: "", user: user.name, attachment: data };
+    if (chatState.replyingTo) {
+      payload.replyTo = chatState.replyingTo;
+      cancelReply();
+    }
+    socket.emit("msg", payload);
   } catch (e) {
     alert(SafariPrefs.t("uploadFailed"));
   } finally {
@@ -3424,7 +3426,12 @@ function makeVoiceRecorder(btnId, getRoomFn) {
           const res = await fetch("/api/upload", { method: "POST", body: formData });
           const data = await res.json();
           if (!res.ok) { alert(data.error || "Upload failed"); return; }
-          socket.emit("msg", { room, text: "", user: user.name, attachment: data });
+          const payload = { room, text: "", user: user.name, attachment: data };
+          if (chatState.replyingTo && room === currentDmRoom) {
+            payload.replyTo = chatState.replyingTo;
+            cancelReply();
+          }
+          socket.emit("msg", payload);
         } catch (err) {
           alert("Failed to send voice message");
         } finally {
